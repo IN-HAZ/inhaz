@@ -7,6 +7,9 @@ services:
     volumes:
       - ../backend:/var/www/html
       - vendor:/var/www/html/vendor
+    env_file:
+      - path: ../.env
+        required: false
     depends_on:
       postgres:
         condition: service_healthy

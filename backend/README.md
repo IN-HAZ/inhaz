@@ -1,58 +1,66 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# inHaz Backend — Laravel REST API & Admin Back-Office
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The `backend` directory contains the core server application for inHaz, built on **Laravel 11** and running inside containerized Docker infrastructure.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## ⚠️ Execution Policy
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+> [!WARNING]
+> Do **not** attempt to run `php artisan serve` directly on your host machine. The backend requires containerized services (PostgreSQL database at `postgres:5432`, Redis at `redis:6379`, and Nginx web server) configured in `infra/`.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🛠️ Tech Stack & Architecture
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+*   **Framework:** Laravel 11 (PHP 8.2+)
+*   **Database:** PostgreSQL (`pgsql`)
+*   **Caching & Session:** Redis
+*   **Queue Driver:** Redis
+*   **Authentication:** Laravel Sanctum (Token-based)
+*   **Admin Panel:** Filament v5 (Laravel/Livewire server-rendered back-office)
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## 🚀 Running Commands via Docker Exec
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+To run Artisan commands, migrations, or tests, execute them inside the running container:
 
 ```bash
-composer require laravel/boost --dev
+# Run Database Migrations
+docker compose -f infra/docker-compose.dev.yml exec php php artisan migrate
 
-php artisan boost:install
+# Seed Database
+docker compose -f infra/docker-compose.dev.yml exec php php artisan db:seed
+
+# Run Unit & Feature Tests
+docker compose -f infra/docker-compose.dev.yml exec php php artisan test
+
+# Access PHP Shell
+docker compose -f infra/docker-compose.dev.yml exec php php artisan tinker
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 📡 API Endpoint Overview (`/api/v1/`)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/auth/send-otp` | Generate and send 6-digit SMS OTP | No |
+| `POST` | `/api/v1/auth/verify-otp` | Verify OTP code and issue Sanctum token | No |
+| `GET` | `/api/v1/me` | Fetch authenticated user profile | Yes (Bearer) |
+| `POST` | `/api/v1/driver/apply` | Submit driver application & credentials | Yes (Bearer) |
+| `POST` | `/api/v1/requests` | Create a new delivery transport request | Yes (Bearer) |
+| `GET` | `/api/v1/requests/browse` | Driver search feed for nearby open requests | Yes (Bearer) |
+| `POST` | `/api/v1/requests/{id}/offers` | Driver submits offer or counter-price | Yes (Bearer) |
+| `POST` | `/api/v1/offers/{id}/accept` | Client accepts winning offer & creates trip | Yes (Bearer) |
+| `POST` | `/api/v1/trips/{id}/transition` | Driver steps trip status milestone | Yes (Bearer) |
+| `POST` | `/api/v1/trips/{id}/rate` | Submit post-trip rating | Yes (Bearer) |
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## ⚙️ Environment Variables
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The backend environment inside Docker is managed by configuration files:
+*   **Dev Mode:** Managed by `infra/docker-compose.dev.yml` environment variables.
+*   **Production Mode:** Configured by root `.env` loaded via `make prod-up`.
