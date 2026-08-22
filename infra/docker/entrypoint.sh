@@ -19,8 +19,13 @@ if [ "${APP_ENV:-production}" = "local" ] || [ "${APP_ENV:-}" = "development" ];
     if [ "$bootstrap" = "1" ]; then
         echo "==> [dev] bootstrapping..."
         if [ ! -f .env ]; then
-            echo "==> [dev] no .env found, creating from .env.example"
-            cp .env.example .env
+            if [ -f .env.example ]; then
+                echo "==> [dev] no .env found, creating from .env.example"
+                cp .env.example .env
+            else
+                echo "==> [dev] no .env found, creating empty .env"
+                touch .env
+            fi
             php artisan key:generate --force
         fi
         # Bind-mount ownership differs from the image; make storage writable.
