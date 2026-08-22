@@ -1,0 +1,108 @@
+# inHaz — Deep Dive: 01 System Architecture & Infrastructure
+
+**Document Scope:** Complete technical architectural blueprint, network topology, application layers, infrastructure setup, security posture, and third-party integrations for the inHaz platform.
+
+---
+
+## 1. High-Level Architecture Overview
+
+inHaz is built around a decoupled client-server architecture. The mobile applications (Client and Driver interfaces unified in a single Expo build) interact with a centralized **Laravel REST API** for standard business operations and establish a **WebSocket connection** for real-time bid streaming, GPS tracking, and chat messaging. An isolated **Filament Admin Panel** runs server-side within the Laravel application for operational management.
+
+```
+                  +-----------------------------------+
+                  |   React Native Expo Mobile App    |
+                  |  (Client Mode / Driver Mode UI)   |
+                  +-----------------+-----------------+
+                                    |
+            +-----------------------+-----------------------+
+            | HTTP / REST (Sanctum) | WebSockets (Echo)     |
+            v                       v                       
+    +-------+-----------------------+-----------------------+
+    |               Laravel API Gateway & Core              |
+    |  - Controllers, Form Requests, Policies, Observers    |
+    |  - Sanctum Auth Middleware & Rate Limiters            |
+    +-------+-----------------------+-----------------------+
+            |                       |                       |
+            v                       v                       v
+    +-------+-------+       +-------+-------+       +-------+-------+
+    |  Relational   |       | Redis / Cache |       | Laravel Reverb|
+    | Database      |       | (Location &   |       | WebSocket     |
+    | (PostgreSQL / |       |  Sessions)    |       | Server        |
+    |  MySQL)       |       +---------------+       +---------------+
+    +---------------+                                       |
+            |                                               |
+            +-----------------------------------------------+
+            |
+            v
+    +-------+-------------------------------+
+    | Filament Admin Panel (Server-Side)    |
+    | - Document Verification, Ledger, etc. |
+    +---------------------------------------+
+```
+
+---
+
+## 2. Infrastructure Components & Responsibilities
+
+### 2.1 Backend API Layer (Laravel)
+*   **Role:** Central authority for business logic, authentication, input validation, data persistence, and authorization policies.
+*   **Protocol:** Stateless HTTPS RESTful JSON endpoints for mobile clients, structured under versioned namespaces (`/api/v1/`).
+*   **Key Responsibilities:**
+    *   Verifying OTP codes and issuing Sanctum Bearer Tokens.
+    *   Enforcing domain rules via Laravel Policies (`RequestPolicy`, `OfferPolicy`, `TripPolicy`).
+    *   Orchestrating state transitions for delivery requests and trips.
+    *   Dispatching queued events for notifications and WebSocket broadcasting.
+
+### 2.2 WebSockets & Broadcasting Layer (Laravel Reverb / Pusher)
+*   **Role:** Real-time data distribution with minimal latency (<200ms target).
+*   **Client Transport:** Laravel Echo over WebSockets.
+*   **Key Real-time Channels:**
+    *   `private-user.{id}`: Personal notifications (bid accepted, document status changed).
+    *   `private-request.{id}`: Request bidding thread (new offers streaming to client).
+    *   `private-trip.{id}`: Active trip channel (driver GPS location pings, trip status transitions, chat messages).
+    *   `presence-nearby.{zoneId}`: Active drivers availability and broadcast map updates.
+
+### 2.3 Ephemeral Data & Caching Layer (Redis)
+*   **Role:** High-speed, volatile data management to prevent primary database overhead.
+*   **Usage:**
+    *   Active OTP storage (hashed with 5-minute TTL).
+    *   Driver live GPS coordinates (updated every 5 seconds per driver during active trips).
+    *   WebSocket connection states and channel subscriptions.
+    *   Rate-limiting counters for API endpoints and SMS dispatchers.
+
+### 2.4 Persistent Database Layer (PostgreSQL / MySQL)
+*   **Role:** Relational source of truth for users, profiles, documents, delivery requests, offers, trips, payments, and system settings.
+*   **Data Integrity:** Strict foreign key constraints, transactional isolation levels (`READ COMMITTED` / `REPEATABLE READ`), and row-level locking for offer acceptance.
+
+### 2.5 Object Storage (S3 / Compatible Blob Storage)
+*   **Role:** Media assets and confidential file storage.
+*   **Buckets Structure:**
+    *   `public-assets/`: Package photos, public vehicle icons (public access via CDN).
+    *   `secure-documents/`: Driver identity cards (CIN), vehicle registrations (Carte Grise), insurance certificates. Strictly private access served only via temporary time-limited Signed URLs generated by Laravel.
+
+---
+
+## 3. Client Architecture (React Native / Expo)
+
+### 3.1 Unified Dual-Role Application
+The mobile app is compiled as a single binary using **Expo Router**. The user persona is dynamic:
+*   **Client View:** Map-centric interface focused on request publication, bid list evaluation, live delivery tracking, and rating.
+*   **Driver View:** Operational dashboard featuring nearby request discovery, rapid counter-offer tooling, navigation trigger, and active trip status stepper.
+
+### 3.2 State Management & Offline Strategy
+*   **Global App State (Zustand / Redux Toolkit):** Stores active user credentials, current role, active request/trip snapshot, and unread chat message badges.
+*   **Server State & Caching (TanStack Query / React Query):** Manages API data fetching, optimistic UI updates during bidding, automatic retry policies, and background polling fallbacks.
+*   **Local Device Persistence:** Secure Store (Encrypted Storage) for auth tokens; Async Storage for app settings and locale preferences (Arabic / French / English).
+
+---
+
+## 4. Security & Compliance Posture
+
+1.  **Transport Security:** HTTPS/TLS 1.3 mandated across all web and mobile communication. Plain HTTP traffic is automatically redirected.
+2.  **API Authorization:** Every protected route requires a valid Sanctum Bearer Token. Every controller method explicitly triggers a Policy check (e.g., `$this->authorize('view', $request)`).
+3.  **Rate Limiting & Anti-Abuse:**
+    *   OTP Request: Max 1 attempt per phone number per 60 seconds; max 5 attempts per IP per hour.
+    *   OTP Verification: Max 3 failed attempts per verification session before invalidating the code.
+    *   Bidding Endpoints: Throttled to prevent automated script bidding.
+4.  **Sensitive Document Protection:** Files stored in `secure-documents/` are encrypted at rest. Direct URL access is forbidden; download links are generated as pre-signed URLs valid for 15 minutes.
+5.  **CORS & Input Sanitization:** Strict origin checks on WebSockets and Admin routes. All inputs are validated via Laravel Form Requests prior to reaching domain models.
