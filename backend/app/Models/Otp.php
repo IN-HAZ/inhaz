@@ -6,11 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Otp extends Model
 {
+    public const MAX_ATTEMPTS = 3;
+
     protected $fillable = [
         'phone',
-        'code',
+        'code_hash',
         'expires_at',
         'used',
+        'attempts',
     ];
 
     protected function casts(): array
@@ -29,5 +32,10 @@ class Otp extends Model
     public function isUsed(): bool
     {
         return $this->used;
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->attempts >= self::MAX_ATTEMPTS;
     }
 }

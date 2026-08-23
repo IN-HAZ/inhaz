@@ -174,10 +174,11 @@ class DeliveryRequestController extends Controller
             ->latest();
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = mb_strtolower($request->input('search'));
+            // LOWER() keeps search case-insensitive on PostgreSQL (LIKE is case-sensitive there).
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+                $q->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(description) LIKE ?', ["%{$search}%"]);
             });
         }
 

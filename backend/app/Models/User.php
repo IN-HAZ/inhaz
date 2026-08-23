@@ -10,18 +10,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'phone', 'role'])]
+#[Fillable(['name', 'phone', 'email', 'role'])]
 #[Hidden(['remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected function casts(): array
     {
         return [
             'phone_verified_at' => 'datetime',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -42,11 +44,16 @@ class User extends Authenticatable
 
     public function isClient(): bool
     {
-        return $this->role === 'CLIENT';
+        return $this->role === 'client';
     }
 
     public function isDriver(): bool
     {
-        return $this->role === 'DRIVER';
+        return $this->role === 'driver';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }

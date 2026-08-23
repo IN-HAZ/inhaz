@@ -15,7 +15,9 @@ case "$1" in
         ;;
 esac
 
-if [ "${APP_ENV:-production}" = "local" ] || [ "${APP_ENV:-}" = "development" ]; then
+# Bootstrap mode comes from INHAZ_MODE (set by docker-compose), NOT from APP_ENV:
+# OS-level APP_ENV would leak into Laravel's env cascade and override backend/.env.
+if [ "${INHAZ_MODE:-}" = "dev" ]; then
     if [ "$bootstrap" = "1" ]; then
         echo "==> [dev] bootstrapping..."
         if [ ! -f .env ]; then

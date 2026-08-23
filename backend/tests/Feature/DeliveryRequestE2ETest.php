@@ -15,7 +15,7 @@ class DeliveryRequestE2ETest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = User::factory()->create(['role' => 'CLIENT']);
+        $this->client = User::factory()->create(['role' => 'client']);
     }
 
     public function test_full_request_lifecycle(): void

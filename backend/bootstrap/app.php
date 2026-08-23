@@ -15,16 +15,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'auth-api' => \App\Http\Middleware\AuthenticateSession::class,
+            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'driver' => \App\Http\Middleware\EnsureUserIsDriver::class,
         ]);
 
-        $middleware->group('auth-api', [
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        ]);
+        // API-only app: no named "login" route exists. The framework default
+        // (fn () => route('login')) eagerly throws during exception construction
+        // whenever a guest omits Accept: application/json, turning 401 into 500.
+        // Returning null defers entirely to shouldRenderJsonWhen below.
+        $middleware->redirectGuestsTo(fn (): ?string => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

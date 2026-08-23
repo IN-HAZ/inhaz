@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\DriverProfile;
 use App\Models\User;
-use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,17 +12,7 @@ class DriverController extends Controller
 {
     public function apply(Request $request): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
-
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $user = User::find($userId);
-
-        if (! $user) {
-            return response()->json(['message' => 'Utilisateur introuvable.'], 404);
-        }
+        $user = $request->user();
 
         if ($user->driverProfile) {
             return response()->json([
@@ -38,48 +26,35 @@ class DriverController extends Controller
                 'status' => 'PENDING',
             ]);
 
-            $user->update(['role' => 'DRIVER']);
+            $user->update(['role' => 'driver']);
         });
-
-        $user->load('driverProfile');
 
         return response()->json([
             'message' => 'Candidature chauffeur créée.',
-            'driver_profile' => $user->driverProfile,
+            'driver_profile' => $user->fresh()->driverProfile,
         ], 201);
     }
 
     public function profile(Request $request): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
-
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $user = User::with(['driverProfile.vehicle', 'driverProfile.documents'])->find($userId);
-
-        if (! $user || ! $user->driverProfile) {
+        if (! $request->user()->driverProfile) {
             return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
         }
 
         return response()->json([
-            'driver_profile' => $user->driverProfile,
+            'driver_profile' => $request->user()
+                ->driverProfile()
+                ->with(['vehicle', 'documents'])
+                ->first(),
         ]);
     }
 
     public function storeDocument(Request $request): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
+        $driverProfile = $this->requireDriverProfile($request);
 
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $user = User::find($userId);
-
-        if (! $user || ! $user->driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
+        if ($driverProfile instanceof JsonResponse) {
+            return $driverProfile;
         }
 
         $validated = $request->validate([
@@ -88,10 +63,9 @@ class DriverController extends Controller
             'expires_at' => 'nullable|date|after:today',
         ]);
 
-        $file = $request->file('file');
-        $path = $file->store('documents/'.$user->driverProfile->id, 'local');
+        $path = $request->file('file')->store('documents/'.$driverProfile->id, 'local');
 
-        $document = $user->driverProfile->documents()->create([
+        $document = $driverProfile->documents()->create([
             'type' => $validated['type'],
             'file' => $path,
             'expires_at' => $validated['expires_at'] ?? null,
@@ -106,35 +80,23 @@ class DriverController extends Controller
 
     public function listDocuments(Request $request): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
+        $driverProfile = $this->requireDriverProfile($request);
 
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $user = User::find($userId);
-
-        if (! $user || ! $user->driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
+        if ($driverProfile instanceof JsonResponse) {
+            return $driverProfile;
         }
 
         return response()->json([
-            'documents' => $user->driverProfile->documents,
+            'documents' => $driverProfile->documents,
         ]);
     }
 
     public function storeVehicle(Request $request): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
+        $driverProfile = $this->requireDriverProfile($request);
 
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $user = User::find($userId);
-
-        if (! $user || ! $user->driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
+        if ($driverProfile instanceof JsonResponse) {
+            return $driverProfile;
         }
 
         $validated = $request->validate([
@@ -143,11 +105,22 @@ class DriverController extends Controller
             'registration_number' => 'required|string|max:255',
         ]);
 
-        $vehicle = $user->driverProfile->vehicle()->updateOrCreate([], $validated);
+        $vehicle = $driverProfile->vehicle()->updateOrCreate([], $validated);
 
         return response()->json([
             'message' => 'Véhicule enregistré.',
             'vehicle' => $vehicle,
         ]);
+    }
+
+    private function requireDriverProfile(Request $request): JsonResponse|\App\Models\DriverProfile
+    {
+        $profile = $request->user()->driverProfile;
+
+        if (! $profile) {
+            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
+        }
+
+        return $profile;
     }
 }

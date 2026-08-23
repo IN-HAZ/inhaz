@@ -22,8 +22,8 @@ class TripDomainTest extends TestCase
 
     public function test_trip_belongs_to_driver_and_client(): void
     {
-        $driver = User::factory()->create(['role' => 'DRIVER']);
-        $client = User::factory()->create(['role' => 'CLIENT']);
+        $driver = User::factory()->create(['role' => 'driver']);
+        $client = User::factory()->create(['role' => 'client']);
         $trip = Trip::factory()->create([
             'driver_user_id' => $driver->id,
             'client_user_id' => $client->id,

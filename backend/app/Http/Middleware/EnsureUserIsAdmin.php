@@ -6,13 +6,13 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureUserIsDriver
+class EnsureUserIsAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->isDriver()) {
+        if (! $request->user()?->isAdmin()) {
             return response()->json([
-                'message' => 'Accès réservé aux chauffeurs.',
+                'message' => 'Accès réservé aux administrateurs.',
             ], 403);
         }
 

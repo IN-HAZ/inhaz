@@ -15,7 +15,7 @@ class DriverVerificationController extends Controller
         protected DriverVerificationService $service,
     ) {}
 
-    public function listPending(Request $request): JsonResponse
+    public function listPending(): JsonResponse
     {
         $pendingProfiles = DriverProfile::with(['user', 'documents', 'vehicle'])
             ->where('status', 'PENDING')
@@ -26,7 +26,7 @@ class DriverVerificationController extends Controller
         ]);
     }
 
-    public function listPendingDocuments(Request $request): JsonResponse
+    public function listPendingDocuments(): JsonResponse
     {
         $pendingDocuments = DriverDocument::with(['driverProfile.user'])
             ->where('status', 'PENDING')
@@ -39,13 +39,7 @@ class DriverVerificationController extends Controller
 
     public function approveDocument(Request $request, DriverDocument $document): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
-
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $document = $this->service->approveDocument($document, $userId);
+        $document = $this->service->approveDocument($document, $request->user()->id);
 
         return response()->json([
             'message' => 'Document approuvé.',
@@ -55,17 +49,11 @@ class DriverVerificationController extends Controller
 
     public function rejectDocument(Request $request, DriverDocument $document): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
-
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
         $validated = $request->validate([
             'reason' => 'required|string|max:500',
         ]);
 
-        $document = $this->service->rejectDocument($document, $userId, $validated['reason']);
+        $document = $this->service->rejectDocument($document, $request->user()->id, $validated['reason']);
 
         return response()->json([
             'message' => 'Document rejeté.',
@@ -75,13 +63,7 @@ class DriverVerificationController extends Controller
 
     public function approveDriver(Request $request, DriverProfile $driverProfile): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
-
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $driverProfile = $this->service->approveDriver($driverProfile, $userId);
+        $driverProfile = $this->service->approveDriver($driverProfile, $request->user()->id);
 
         return response()->json([
             'message' => 'Chauffeur approuvé.',
@@ -91,17 +73,11 @@ class DriverVerificationController extends Controller
 
     public function rejectDriver(Request $request, DriverProfile $driverProfile): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
-
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
         $validated = $request->validate([
             'reason' => 'required|string|max:500',
         ]);
 
-        $driverProfile = $this->service->rejectDriver($driverProfile, $userId, $validated['reason']);
+        $driverProfile = $this->service->rejectDriver($driverProfile, $request->user()->id, $validated['reason']);
 
         return response()->json([
             'message' => 'Chauffeur rejeté.',
