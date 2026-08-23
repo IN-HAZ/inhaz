@@ -7,29 +7,16 @@ services:
     volumes:
       - ../backend:/var/www/html
       - vendor:/var/www/html/vendor
-    env_file:
-      - path: ../.env
-        required: false
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # Runtime app config comes exclusively from backend/.env (single source of truth).
+    # INHAZ_MODE only steers the entrypoint bootstrap; do NOT add APP_ENV / DB_* / CACHE_*
+    # here — OS-level vars override .env and break Laravel's env cascade (and phpunit).
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: inhaz
-      DB_USERNAME: inhaz
-      DB_PASSWORD: inhaz
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
-      SESSION_DRIVER: redis
-      CACHE_STORE: redis
-      QUEUE_CONNECTION: redis
+      INHAZ_MODE: dev
     networks:
       - inhaz
 

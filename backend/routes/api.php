@@ -17,16 +17,21 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    Route::prefix('auth')->middleware('auth-api')->group(function () {
+    // Public endpoints (login flow) — no authentication required.
+    Route::prefix('auth')->group(function () {
         Route::post('/send-otp', [AuthController::class, 'sendOtp']);
         Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-        Route::post('/logout', [AuthController::class, 'logout']);
+
+        Route::middleware(['auth:sanctum', 'active'])->group(function () {
+            Route::post('/logout', [AuthController::class, 'logout']);
+            Route::post('/switch-role', [AuthController::class, 'switchRole']);
+        });
     });
 
-    Route::get('/me', [AuthController::class, 'me'])->middleware('auth-api');
-    Route::put('/me', [AuthController::class, 'updateProfile'])->middleware('auth-api');
+    Route::get('/me', [AuthController::class, 'me'])->middleware(['auth:sanctum', 'active']);
+    Route::put('/me', [AuthController::class, 'updateProfile'])->middleware(['auth:sanctum', 'active']);
 
-    Route::prefix('driver')->middleware('auth-api')->group(function () {
+    Route::prefix('driver')->middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/apply', [DriverController::class, 'apply']);
         Route::get('/profile', [DriverController::class, 'profile']);
         Route::post('/documents', [DriverController::class, 'storeDocument']);
@@ -35,7 +40,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/vehicle', [DriverController::class, 'storeVehicle']);
     });
 
-    Route::prefix('requests')->middleware('auth-api')->group(function () {
+    Route::prefix('requests')->middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/browse', [DeliveryRequestController::class, 'browse']);
 
         Route::get('/', [DeliveryRequestController::class, 'index']);
@@ -53,11 +58,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/{deliveryRequest}/offers', [OfferController::class, 'index']);
     });
 
-    Route::post('/offers/{offer}/accept', [OfferController::class, 'accept'])->middleware('auth-api');
-    Route::post('/offers/{offer}/reject', [OfferController::class, 'reject'])->middleware('auth-api');
-    Route::post('/offers/{offer}/withdraw', [OfferController::class, 'withdraw'])->middleware('auth-api');
+    Route::post('/offers/{offer}/accept', [OfferController::class, 'accept'])->middleware(['auth:sanctum', 'active']);
+    Route::post('/offers/{offer}/reject', [OfferController::class, 'reject'])->middleware(['auth:sanctum', 'active']);
+    Route::post('/offers/{offer}/withdraw', [OfferController::class, 'withdraw'])->middleware(['auth:sanctum', 'active']);
 
-    Route::middleware('auth-api')->group(function () {
+    Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/trips/{trip}', [TripController::class, 'show']);
         Route::post('/trips/{trip}/transition', [TripController::class, 'transition']);
         Route::post('/trips/{trip}/cancel', [TripController::class, 'cancel']);
@@ -68,13 +73,13 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::get('/request-photos/{photo}/view', [RequestPhotoController::class, 'show'])
-        ->middleware('auth-api')
+        ->middleware(['auth:sanctum', 'active'])
         ->name('request-photos.view');
 
     Route::delete('/request-photos/{photo}', [RequestPhotoController::class, 'destroy'])
-        ->middleware('auth-api');
+        ->middleware(['auth:sanctum', 'active']);
 
-    Route::prefix('admin/driver')->middleware('auth-api')->group(function () {
+    Route::prefix('admin/driver')->middleware(['auth:sanctum', 'active', 'admin'])->group(function () {
         Route::get('/pending', [DriverVerificationController::class, 'listPending']);
         Route::get('/documents/pending', [DriverVerificationController::class, 'listPendingDocuments']);
         Route::post('/documents/{document}/approve', [DriverVerificationController::class, 'approveDocument']);

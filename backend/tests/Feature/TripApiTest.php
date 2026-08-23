@@ -19,8 +19,8 @@ class TripApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = User::factory()->create(['role' => 'CLIENT']);
-        $this->driver = User::factory()->create(['role' => 'DRIVER']);
+        $this->client = User::factory()->create(['role' => 'client']);
+        $this->driver = User::factory()->create(['role' => 'driver']);
     }
 
     public function test_unauthenticated_user_cannot_view_trip(): void

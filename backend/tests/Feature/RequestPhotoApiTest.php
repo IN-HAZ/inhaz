@@ -20,7 +20,7 @@ class RequestPhotoApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = User::factory()->create(['role' => 'CLIENT']);
+        $this->client = User::factory()->create(['role' => 'client']);
         $this->request = DeliveryRequest::factory()->create([
             'user_id' => $this->client->id,
             'status' => 'DRAFT',
@@ -95,7 +95,7 @@ class RequestPhotoApiTest extends TestCase
 
     public function test_cannot_upload_to_other_users_request(): void
     {
-        $otherUser = User::factory()->create(['role' => 'CLIENT']);
+        $otherUser = User::factory()->create(['role' => 'client']);
         $otherRequest = DeliveryRequest::factory()->create(['user_id' => $otherUser->id]);
         $file = UploadedFile::fake()->image('photo.jpg');
 
@@ -132,7 +132,7 @@ class RequestPhotoApiTest extends TestCase
 
     public function test_client_cannot_list_other_users_photos(): void
     {
-        $otherUser = User::factory()->create(['role' => 'CLIENT']);
+        $otherUser = User::factory()->create(['role' => 'client']);
         $otherRequest = DeliveryRequest::factory()->create(['user_id' => $otherUser->id]);
 
         $response = $this->actingAs($this->client)->getJson("/api/v1/requests/{$otherRequest->id}/photos");
@@ -155,7 +155,7 @@ class RequestPhotoApiTest extends TestCase
 
     public function test_cannot_delete_other_users_photo(): void
     {
-        $otherUser = User::factory()->create(['role' => 'CLIENT']);
+        $otherUser = User::factory()->create(['role' => 'client']);
         $otherRequest = DeliveryRequest::factory()->create(['user_id' => $otherUser->id]);
         $photo = RequestPhoto::factory()->create([
             'delivery_request_id' => $otherRequest->id,

@@ -14,6 +14,11 @@ class OtpNotification extends Notification
         protected string $code,
     ) {}
 
+    public function code(): string
+    {
+        return $this->code;
+    }
+
     public function via(object $notifiable): array
     {
         return ['mail'];

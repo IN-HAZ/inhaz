@@ -15,7 +15,7 @@ class OfferDomainTest extends TestCase
     public function test_offer_belongs_to_delivery_request(): void
     {
         $request = DeliveryRequest::factory()->create();
-        $driver = User::factory()->create(['role' => 'DRIVER']);
+        $driver = User::factory()->create(['role' => 'driver']);
         $offer = Offer::factory()->create([
             'delivery_request_id' => $request->id,
             'user_id' => $driver->id,
@@ -27,7 +27,7 @@ class OfferDomainTest extends TestCase
 
     public function test_offer_belongs_to_driver(): void
     {
-        $driver = User::factory()->create(['role' => 'DRIVER']);
+        $driver = User::factory()->create(['role' => 'driver']);
         $offer = Offer::factory()->create(['user_id' => $driver->id]);
 
         $this->assertInstanceOf(User::class, $offer->driver);
@@ -122,7 +122,7 @@ class OfferDomainTest extends TestCase
     public function test_unique_offer_per_driver_per_request(): void
     {
         $request = DeliveryRequest::factory()->create();
-        $driver = User::factory()->create(['role' => 'DRIVER']);
+        $driver = User::factory()->create(['role' => 'driver']);
 
         Offer::factory()->create([
             'delivery_request_id' => $request->id,
