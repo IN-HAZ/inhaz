@@ -25,8 +25,6 @@ class DriverController extends Controller
             $user->driverProfile()->create([
                 'status' => 'PENDING',
             ]);
-
-            $user->update(['role' => 'driver']);
         });
 
         return response()->json([
