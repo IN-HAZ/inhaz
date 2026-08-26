@@ -15,8 +15,8 @@ class TripE2ETest extends TestCase
 
     public function test_full_trip_lifecycle(): void
     {
-        $driver = User::factory()->create(['role' => 'DRIVER']);
-        $client = User::factory()->create(['role' => 'CLIENT']);
+        $driver = User::factory()->create(['role' => 'driver']);
+        $client = User::factory()->create(['role' => 'client']);
 
         // Create delivery request with stops
         $request = DeliveryRequest::factory()->create([
@@ -158,8 +158,8 @@ class TripE2ETest extends TestCase
 
     public function test_trip_cancellation_by_driver(): void
     {
-        $driver = User::factory()->create(['role' => 'DRIVER']);
-        $client = User::factory()->create(['role' => 'CLIENT']);
+        $driver = User::factory()->create(['role' => 'driver']);
+        $client = User::factory()->create(['role' => 'client']);
         $request = DeliveryRequest::factory()->create(['status' => 'MATCHED']);
         $trip = Trip::factory()->create([
             'delivery_request_id' => $request->id,
@@ -190,8 +190,8 @@ class TripE2ETest extends TestCase
 
     public function test_trip_cancellation_by_client(): void
     {
-        $driver = User::factory()->create(['role' => 'DRIVER']);
-        $client = User::factory()->create(['role' => 'CLIENT']);
+        $driver = User::factory()->create(['role' => 'driver']);
+        $client = User::factory()->create(['role' => 'client']);
         $request = DeliveryRequest::factory()->create(['status' => 'MATCHED']);
         $trip = Trip::factory()->create([
             'delivery_request_id' => $request->id,
@@ -208,8 +208,8 @@ class TripE2ETest extends TestCase
 
     public function test_cannot_cancel_in_transit_trip(): void
     {
-        $driver = User::factory()->create(['role' => 'DRIVER']);
-        $client = User::factory()->create(['role' => 'CLIENT']);
+        $driver = User::factory()->create(['role' => 'driver']);
+        $client = User::factory()->create(['role' => 'client']);
         $request = DeliveryRequest::factory()->create(['status' => 'MATCHED']);
         $trip = Trip::factory()->create([
             'delivery_request_id' => $request->id,
@@ -226,9 +226,9 @@ class TripE2ETest extends TestCase
 
     public function test_unauthorized_third_party_cannot_access_trip(): void
     {
-        $driver = User::factory()->create(['role' => 'DRIVER']);
-        $client = User::factory()->create(['role' => 'CLIENT']);
-        $other = User::factory()->create(['role' => 'CLIENT']);
+        $driver = User::factory()->create(['role' => 'driver']);
+        $client = User::factory()->create(['role' => 'client']);
+        $other = User::factory()->create(['role' => 'client']);
         $request = DeliveryRequest::factory()->create(['status' => 'MATCHED']);
         $trip = Trip::factory()->create([
             'delivery_request_id' => $request->id,

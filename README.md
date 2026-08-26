@@ -105,3 +105,4 @@ cp .env.example .env
 *   [Epic 05: Trip Execution, Tracking & Chat](dev/epic-05-trip-execution-tracking-and-chat/README.md)
 *   [Epic 06: Payments, Commission & Ratings](dev/epic-06-payments-commission-and-ratings/README.md)
 *   [Epic 07: Admin Back-Office & Governance](dev/epic-07-admin-back-office-and-governance/README.md)
+*   [Epic 08: Database Foundation, Schema Integrity & Ledger](dev/epic-08-database-foundation-and-integrity/README.md)

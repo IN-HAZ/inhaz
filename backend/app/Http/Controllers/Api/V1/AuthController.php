@@ -12,49 +12,51 @@ use App\Notifications\OtpNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    private const OTP_TTL_MINUTES = 5;
+
     public function sendOtp(SendOtpRequest $request): JsonResponse
     {
         $phone = $request->validated('phone');
 
-        $throttleKey = 'send-otp:'.$phone;
+        // Spec US-101: max 1 request per phone per 60s.
+        $phoneKey = 'send-otp:phone:'.$phone;
+        if (RateLimiter::tooManyAttempts($phoneKey, 1)) {
+            return $this->tooManyAttempts(RateLimiter::availableIn($phoneKey));
+        }
 
-        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
-
+        // Defense in depth: cap OTP dispatches per IP to prevent SMS/email bombing.
+        $ipKey = 'send-otp:ip:'.$request->ip();
+        if (RateLimiter::tooManyAttempts($ipKey, 10)) {
             return response()->json([
-                'message' => 'Trop de demandes. Veuillez réessayer dans '.$seconds.' secondes.',
+                'message' => 'Trop de demandes depuis cet appareil. Réessayez plus tard.',
             ], 429);
         }
 
-        RateLimiter::hit($throttleKey, 300);
+        RateLimiter::hit($phoneKey, 60);
+        RateLimiter::hit($ipKey, 3600);
 
-        Otp::where('phone', $phone)
-            ->where('used', false)
-            ->update(['used' => true]);
+        Otp::where('phone', $phone)->where('used', false)->update(['used' => true]);
 
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         Otp::create([
             'phone' => $phone,
-            'code' => $code,
-            'expires_at' => now()->addMinutes(5),
+            'code_hash' => Hash::make($code),
+            'expires_at' => now()->addMinutes(self::OTP_TTL_MINUTES),
         ]);
 
-        $user = User::where('phone', $phone)->first();
-        $email = ($user->email ?? $phone).'@mailpit.test';
-
-        Notification::route('mail', $email)
+        // MVP delivery channel: local mailbox (Mailpit). Swap for an SMS gateway post-MVP.
+        Notification::route('mail', $phone.'@mailpit.test')
             ->notify(new OtpNotification($code));
 
         return response()->json([
             'message' => 'Code OTP envoyé.',
-            'debug_code' => config('app.debug') ? $code : null,
         ]);
     }
 
@@ -63,60 +65,87 @@ class AuthController extends Controller
         $phone = $request->validated('phone');
         $code = $request->validated('code');
 
+        $attemptsKey = 'verify-otp:'.$phone;
+        if (RateLimiter::tooManyAttempts($attemptsKey, 5)) {
+            return $this->tooManyAttempts(RateLimiter::availableIn($attemptsKey));
+        }
+
         $otp = Otp::where('phone', $phone)
-            ->where('code', $code)
             ->where('used', false)
             ->where('expires_at', '>', now())
             ->latest()
             ->first();
 
-        if (! $otp) {
-            $attemptsKey = 'verify-otp:'.$phone;
-            RateLimiter::hit($attemptsKey, 300);
-
-            if (RateLimiter::tooManyAttempts($attemptsKey, 10)) {
-                return response()->json([
-                    'message' => 'Trop de tentatives. Veuillez redemander un nouveau code.',
-                ], 429);
-            }
-
-            return response()->json([
-                'message' => 'Code OTP invalide ou expiré.',
-            ], 422);
+        if (! $otp || $otp->isLocked() || ! Hash::check($code, $otp->code_hash)) {
+            return $this->registerFailedAttempt($attemptsKey, $otp);
         }
 
-        DB::transaction(function () use ($otp, $phone) {
+        $user = DB::transaction(function () use ($otp, $phone) {
             $otp->update(['used' => true]);
 
-            $user = User::firstOrCreate(
-                ['phone' => $phone],
-                ['name' => '']
-            );
-
+            $user = User::firstOrCreate(['phone' => $phone]);
             $user->update(['phone_verified_at' => now()]);
 
             if (! $user->customerProfile) {
                 $user->customerProfile()->create([]);
             }
+
+            return $user;
         });
 
-        $user = User::where('phone', $phone)->first();
-
-        $request->session()->put('auth_token', Str::random(60));
-        $request->session()->put('user_id', $user->id);
-        $request->session()->regenerate();
+        RateLimiter::clear($attemptsKey);
 
         return response()->json([
             'message' => 'Authentification réussie.',
+            'token' => $user->createToken('mobile-app')->plainTextToken,
+            'token_type' => 'Bearer',
             'user' => $user->load('customerProfile'),
         ]);
     }
 
+    public function switchRole(Request $request): JsonResponse
+    {
+        $request->validate(['mode' => ['required', 'in:client,driver']]);
+
+        $user = $request->user();
+        $mode = $request->input('mode');
+
+        if ($user->isAdmin()) {
+            return $this->switchResponse($mode, false, 'admin_role');
+        }
+
+        if ($mode === 'driver') {
+            $profile = $user->driverProfile;
+
+            if (! $profile) {
+                return $this->switchResponse('driver', false, 'onboarding_required');
+            }
+
+            if ($profile->status === 'PENDING') {
+                return $this->switchResponse('driver', false, 'verification_pending', 'pending');
+            }
+
+            if ($profile->status !== 'APPROVED') {
+                return $this->switchResponse('driver', false, 'verification_failed', strtolower($profile->status));
+            }
+
+            $user->update(['role' => 'driver']);
+
+            return $this->switchResponse('driver', true, null, null, $user);
+        }
+
+        if ($user->isAdmin()) {
+            return $this->switchResponse('client', false, 'admin_role');
+        }
+
+        $user->update(['role' => 'client']);
+
+        return $this->switchResponse('client', true, null, null, $user);
+    }
+
     public function logout(Request $request): JsonResponse
     {
-        $request->session()->forget(['auth_token', 'user_id']);
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $request->user()->currentAccessToken()?->delete();
 
         return response()->json([
             'message' => 'Déconnexion réussie.',
@@ -125,55 +154,70 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
-
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $user = User::with(['customerProfile', 'driverProfile'])->find($userId);
-
-        if (! $user) {
-            return response()->json(['message' => 'Utilisateur introuvable.'], 404);
-        }
-
         return response()->json([
-            'user' => $user,
+            'user' => $request->user()->load('customerProfile', 'driverProfile'),
         ]);
     }
 
     public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
-        $userId = $request->session()->get('user_id');
-
-        if (! $userId) {
-            return response()->json(['message' => 'Non authentifié.'], 401);
-        }
-
-        $user = User::find($userId);
-
-        if (! $user) {
-            return response()->json(['message' => 'Utilisateur introuvable.'], 404);
-        }
-
+        $user = $request->user();
         $data = $request->validated();
 
         if (isset($data['name'])) {
             $user->update(['name' => $data['name']]);
-            if ($user->customerProfile) {
-                $user->customerProfile->update(['name' => $data['name']]);
-            }
+            optional($user->customerProfile)->update(['name' => $data['name']]);
         }
 
         if (array_key_exists('email', $data)) {
-            if ($user->customerProfile) {
-                $user->customerProfile->update(['email' => $data['email']]);
-            }
+            optional($user->customerProfile)->update(['email' => $data['email']]);
         }
 
         return response()->json([
             'message' => 'Profil mis à jour.',
-            'user' => $user->load('customerProfile'),
+            'user' => $user->fresh()->load('customerProfile'),
         ]);
+    }
+
+    private function registerFailedAttempt(string $key, ?Otp $otp): JsonResponse
+    {
+        RateLimiter::hit($key, 300);
+
+        if ($otp) {
+            $otp->increment('attempts');
+            // Spec US-101: 3 failed attempts invalidate the code.
+            if ($otp->isLocked()) {
+                $otp->update(['used' => true]);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Code OTP invalide ou expiré.',
+        ], 422);
+    }
+
+    private function tooManyAttempts(int $seconds): JsonResponse
+    {
+        return response()->json([
+            'message' => 'Trop de tentatives. Veuillez réessayer dans '.$seconds.' secondes.',
+        ], 429)->withHeaders([
+            'Retry-After' => $seconds,
+        ]);
+    }
+
+    private function switchResponse(
+        string $mode,
+        bool $allowed,
+        ?string $reason,
+        ?string $verificationStatus = null,
+        ?User $user = null,
+    ): JsonResponse {
+        return response()->json(array_filter([
+            'mode' => $mode,
+            'allowed' => $allowed,
+            'reason' => $reason,
+            'verification_status' => $verificationStatus,
+            'user' => $allowed && $user ? $user->fresh()->load('customerProfile', 'driverProfile') : null,
+        ], fn ($value) => $value !== null));
     }
 }
