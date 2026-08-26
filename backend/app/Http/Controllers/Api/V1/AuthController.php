@@ -110,6 +110,10 @@ class AuthController extends Controller
         $user = $request->user();
         $mode = $request->input('mode');
 
+        if ($user->isAdmin()) {
+            return $this->switchResponse($mode, false, 'admin_role');
+        }
+
         if ($mode === 'driver') {
             $profile = $user->driverProfile;
 
