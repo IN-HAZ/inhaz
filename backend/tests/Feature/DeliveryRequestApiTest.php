@@ -16,7 +16,7 @@ class DeliveryRequestApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = User::factory()->create(['role' => 'CLIENT']);
+        $this->client = User::factory()->create(['role' => 'client']);
     }
 
     public function test_unauthenticated_user_cannot_create_request(): void
@@ -104,7 +104,7 @@ class DeliveryRequestApiTest extends TestCase
 
     public function test_client_cannot_see_other_users_requests(): void
     {
-        $otherUser = User::factory()->create(['role' => 'CLIENT']);
+        $otherUser = User::factory()->create(['role' => 'client']);
         DeliveryRequest::factory()->count(2)->create(['user_id' => $otherUser->id]);
         DeliveryRequest::factory()->count(1)->create(['user_id' => $this->client->id]);
 
@@ -128,7 +128,7 @@ class DeliveryRequestApiTest extends TestCase
 
     public function test_client_cannot_view_other_users_request(): void
     {
-        $otherUser = User::factory()->create(['role' => 'CLIENT']);
+        $otherUser = User::factory()->create(['role' => 'client']);
         $request = DeliveryRequest::factory()->create([
             'user_id' => $otherUser->id,
         ]);
@@ -201,7 +201,7 @@ class DeliveryRequestApiTest extends TestCase
 
     public function test_client_cannot_update_other_users_request(): void
     {
-        $otherUser = User::factory()->create(['role' => 'CLIENT']);
+        $otherUser = User::factory()->create(['role' => 'client']);
         $request = DeliveryRequest::factory()->create([
             'user_id' => $otherUser->id,
             'status' => 'DRAFT',
@@ -258,7 +258,7 @@ class DeliveryRequestApiTest extends TestCase
 
     public function test_client_cannot_cancel_other_users_request(): void
     {
-        $otherUser = User::factory()->create(['role' => 'CLIENT']);
+        $otherUser = User::factory()->create(['role' => 'client']);
         $request = DeliveryRequest::factory()->create([
             'user_id' => $otherUser->id,
             'status' => 'OPEN',

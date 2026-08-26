@@ -19,8 +19,8 @@ class OfferApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = User::factory()->create(['role' => 'CLIENT']);
-        $this->driver = User::factory()->create(['role' => 'DRIVER']);
+        $this->client = User::factory()->create(['role' => 'client']);
+        $this->driver = User::factory()->create(['role' => 'driver']);
     }
 
     public function test_unauthenticated_user_cannot_create_offer(): void
@@ -150,7 +150,7 @@ class OfferApiTest extends TestCase
             'user_id' => $this->driver->id,
             'status' => 'PENDING',
         ]);
-        $otherDriver = User::factory()->create(['role' => 'DRIVER']);
+        $otherDriver = User::factory()->create(['role' => 'driver']);
         $other = Offer::factory()->create([
             'delivery_request_id' => $request->id,
             'user_id' => $otherDriver->id,
@@ -201,7 +201,7 @@ class OfferApiTest extends TestCase
     public function test_cannot_withdraw_other_drivers_offer(): void
     {
         $request = DeliveryRequest::factory()->create(['status' => 'OPEN']);
-        $otherDriver = User::factory()->create(['role' => 'DRIVER']);
+        $otherDriver = User::factory()->create(['role' => 'driver']);
         $offer = Offer::factory()->create([
             'delivery_request_id' => $request->id,
             'user_id' => $otherDriver->id,

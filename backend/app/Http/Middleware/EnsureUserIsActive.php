@@ -6,14 +6,14 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureUserIsDriver
+class EnsureUserIsActive
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->isDriver()) {
+        if (! $request->user()?->is_active) {
             return response()->json([
-                'message' => 'Accès réservé aux chauffeurs.',
-            ], 403);
+                'message' => 'Ce compte a été désactivé.',
+            ], 401);
         }
 
         return $next($request);

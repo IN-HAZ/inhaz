@@ -18,9 +18,9 @@ class OfferE2ETest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = User::factory()->create(['role' => 'CLIENT']);
-        $this->driver1 = User::factory()->create(['role' => 'DRIVER']);
-        $this->driver2 = User::factory()->create(['role' => 'DRIVER']);
+        $this->client = User::factory()->create(['role' => 'client']);
+        $this->driver1 = User::factory()->create(['role' => 'driver']);
+        $this->driver2 = User::factory()->create(['role' => 'driver']);
     }
 
     public function test_full_marketplace_lifecycle(): void
