@@ -20,10 +20,16 @@ esac
 if [ "${INHAZ_MODE:-}" = "dev" ]; then
     if [ "$bootstrap" = "1" ]; then
         echo "==> [dev] bootstrapping..."
-        if [ ! -f .env ]; then
-            if [ -f .env.example ]; then
+        if [ ! -f .env ] || [ ! -s .env ]; then
+            if [ -f ../.env ]; then
+                echo "==> [dev] copying root .env to backend/.env"
+                cp ../.env .env
+            elif [ -f .env.example ]; then
                 echo "==> [dev] no .env found, creating from .env.example"
                 cp .env.example .env
+            elif [ -f ../.env.example ]; then
+                echo "==> [dev] no .env found, creating from ../.env.example"
+                cp ../.env.example .env
             else
                 echo "==> [dev] no .env found, creating empty .env"
                 touch .env
