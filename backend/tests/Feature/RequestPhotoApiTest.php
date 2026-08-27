@@ -15,6 +15,7 @@ class RequestPhotoApiTest extends TestCase
     use RefreshDatabase;
 
     private User $client;
+
     private DeliveryRequest $request;
 
     protected function setUp(): void
@@ -144,7 +145,7 @@ class RequestPhotoApiTest extends TestCase
     {
         $photo = RequestPhoto::factory()->create([
             'delivery_request_id' => $this->request->id,
-            'file_path' => 'request-photos/' . $this->request->id . '/test.jpg',
+            'file_path' => 'request-photos/'.$this->request->id.'/test.jpg',
         ]);
 
         $response = $this->actingAs($this->client)->deleteJson("/api/v1/request-photos/{$photo->id}");

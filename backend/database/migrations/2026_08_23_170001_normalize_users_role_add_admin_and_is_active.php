@@ -37,7 +37,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE users DROP CONSTRAINT users_role_check");
+        DB::statement('ALTER TABLE users DROP CONSTRAINT users_role_check');
         DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('client', 'driver'))");
         DB::table('users')->where('role', 'admin')->update(['role' => 'client']);
 

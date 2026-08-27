@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\DriverVerificationController;
 use App\Http\Controllers\Api\V1\OfferController;
 use App\Http\Controllers\Api\V1\RequestPhotoController;
 use App\Http\Controllers\Api\V1\TripController;
+use App\Http\Controllers\DocumentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -33,11 +34,14 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('driver')->middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/apply', [DriverController::class, 'apply']);
-        Route::get('/profile', [DriverController::class, 'profile']);
-        Route::post('/documents', [DriverController::class, 'storeDocument']);
-        Route::get('/documents', [DriverController::class, 'listDocuments']);
-        Route::get('/documents/{document}/view', [\App\Http\Controllers\DocumentController::class, 'show']);
-        Route::post('/vehicle', [DriverController::class, 'storeVehicle']);
+
+        Route::middleware('driver')->group(function () {
+            Route::get('/profile', [DriverController::class, 'profile']);
+            Route::post('/documents', [DriverController::class, 'storeDocument']);
+            Route::get('/documents', [DriverController::class, 'listDocuments']);
+            Route::get('/documents/{document}/view', [DocumentController::class, 'show']);
+            Route::post('/vehicle', [DriverController::class, 'storeVehicle']);
+        });
     });
 
     Route::prefix('requests')->middleware(['auth:sanctum', 'active'])->group(function () {
@@ -68,7 +72,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/trips/{trip}/cancel', [TripController::class, 'cancel']);
         Route::get('/trips/{trip}/waypoints', [TripController::class, 'waypoints']);
         Route::post('/trips/{trip}/rate', [TripController::class, 'rate']);
-        Route::get('/driver/trips', [TripController::class, 'driverTrips']);
+        Route::get('/driver/trips', [TripController::class, 'driverTrips'])->middleware('driver');
         Route::get('/client/trips', [TripController::class, 'clientTrips']);
     });
 

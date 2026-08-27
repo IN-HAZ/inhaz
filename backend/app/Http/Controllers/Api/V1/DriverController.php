@@ -3,98 +3,88 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Http\Requests\Api\V1\StoreDriverDocumentRequest;
+use App\Http\Resources\DriverDocumentResource;
+use App\Http\Resources\DriverProfileResource;
+use App\Http\Resources\VehicleResource;
+use App\Services\DriverService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class DriverController extends Controller
 {
+    public function __construct(private DriverService $driverService) {}
+
     public function apply(Request $request): JsonResponse
     {
-        $user = $request->user();
+        try {
+            $profile = $this->driverService->apply($request->user());
 
-        if ($user->driverProfile) {
             return response()->json([
-                'message' => 'Vous avez déjà un profil chauffeur.',
-                'driver_profile' => $user->driverProfile,
+                'message' => 'Candidature chauffeur créée.',
+                'driver_profile' => new DriverProfileResource($profile),
+            ], 201);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'driver_profile' => new DriverProfileResource($request->user()->driverProfile),
             ], 422);
         }
-
-        DB::transaction(function () use ($user) {
-            $user->driverProfile()->create([
-                'status' => 'PENDING',
-            ]);
-        });
-
-        return response()->json([
-            'message' => 'Candidature chauffeur créée.',
-            'driver_profile' => $user->fresh()->driverProfile,
-        ], 201);
     }
 
     public function profile(Request $request): JsonResponse
     {
-        if (! $request->user()->driverProfile) {
+        $profile = $request->user()->driverProfile;
+
+        if (! $profile) {
             return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
         }
 
         return response()->json([
-            'driver_profile' => $request->user()
-                ->driverProfile()
-                ->with(['vehicle', 'documents'])
-                ->first(),
+            'driver_profile' => new DriverProfileResource($profile->load(['vehicle', 'documents'])),
         ]);
     }
 
-    public function storeDocument(Request $request): JsonResponse
+    public function storeDocument(StoreDriverDocumentRequest $request): JsonResponse
     {
-        $driverProfile = $this->requireDriverProfile($request);
+        $driverProfile = $request->user()->driverProfile;
 
-        if ($driverProfile instanceof JsonResponse) {
-            return $driverProfile;
+        if (! $driverProfile) {
+            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
         }
 
-        $validated = $request->validate([
-            'type' => 'required|in:CIN,REGISTRATION,INSURANCE,DRIVING_LICENSE',
-            'file' => 'required|file|max:10240',
-            'expires_at' => 'nullable|date|after:today',
-        ]);
-
-        $path = $request->file('file')->store('documents/'.$driverProfile->id, 'local');
-
-        $document = $driverProfile->documents()->create([
-            'type' => $validated['type'],
-            'file' => $path,
-            'expires_at' => $validated['expires_at'] ?? null,
-            'status' => 'PENDING',
-        ]);
+        $document = $this->driverService->storeDocument(
+            $driverProfile,
+            $request->validated('type'),
+            $request->file('file'),
+            $request->validated('expires_at') ?? null
+        );
 
         return response()->json([
             'message' => 'Document téléchargé.',
-            'document' => $document,
+            'document' => new DriverDocumentResource($document),
         ], 201);
     }
 
     public function listDocuments(Request $request): JsonResponse
     {
-        $driverProfile = $this->requireDriverProfile($request);
+        $driverProfile = $request->user()->driverProfile;
 
-        if ($driverProfile instanceof JsonResponse) {
-            return $driverProfile;
+        if (! $driverProfile) {
+            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
         }
 
         return response()->json([
-            'documents' => $driverProfile->documents,
+            'documents' => DriverDocumentResource::collection($driverProfile->documents),
         ]);
     }
 
     public function storeVehicle(Request $request): JsonResponse
     {
-        $driverProfile = $this->requireDriverProfile($request);
+        $driverProfile = $request->user()->driverProfile;
 
-        if ($driverProfile instanceof JsonResponse) {
-            return $driverProfile;
+        if (! $driverProfile) {
+            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
         }
 
         $validated = $request->validate([
@@ -103,22 +93,11 @@ class DriverController extends Controller
             'registration_number' => 'required|string|max:255',
         ]);
 
-        $vehicle = $driverProfile->vehicle()->updateOrCreate([], $validated);
+        $vehicle = $this->driverService->storeVehicle($driverProfile, $validated);
 
         return response()->json([
             'message' => 'Véhicule enregistré.',
-            'vehicle' => $vehicle,
+            'vehicle' => new VehicleResource($vehicle),
         ]);
-    }
-
-    private function requireDriverProfile(Request $request): JsonResponse|\App\Models\DriverProfile
-    {
-        $profile = $request->user()->driverProfile;
-
-        if (! $profile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
-        }
-
-        return $profile;
     }
 }
