@@ -2,28 +2,45 @@
 
 namespace App\Models;
 
+use App\Enums\TripStatus;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable([
+    'delivery_request_id',
+    'offer_id',
+    'driver_user_id',
+    'client_user_id',
+    'status',
+    'agreed_price',
+    'final_price',
+    'assigned_at',
+    'picked_up_at',
+    'delivered_at',
+    'cancelled_at',
+    'cancellation_reason',
+])]
 class Trip extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'delivery_request_id',
-        'offer_id',
-        'driver_user_id',
-        'client_user_id',
-        'status',
-        'agreed_price',
-        'final_price',
-        'assigned_at',
-        'picked_up_at',
-        'delivered_at',
-        'cancelled_at',
-        'cancellation_reason',
-    ];
+    public function scopeForDriver(Builder $query, User $user): void
+    {
+        $query->where('driver_user_id', $user->id);
+    }
+
+    public function scopeForClient(Builder $query, User $user): void
+    {
+        $query->where('client_user_id', $user->id);
+    }
+
+    public function scopeActive(Builder $query): void
+    {
+        $query->whereNotIn('status', [TripStatus::Delivered, TripStatus::Cancelled]);
+    }
 
     protected function casts(): array
     {
@@ -34,6 +51,7 @@ class Trip extends Model
             'picked_up_at' => 'datetime',
             'delivered_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'status' => TripStatus::class,
         ];
     }
 
@@ -64,33 +82,33 @@ class Trip extends Model
 
     public function isAssigned(): bool
     {
-        return $this->status === 'ASSIGNED';
+        return $this->status === TripStatus::Assigned;
     }
 
     public function isCompleted(): bool
     {
-        return $this->status === 'DELIVERED';
+        return $this->status === TripStatus::Delivered;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === 'CANCELLED';
+        return $this->status === TripStatus::Cancelled;
     }
 
     public function isActive(): bool
     {
-        return in_array($this->status, ['ASSIGNED', 'DRIVER_EN_ROUTE', 'AT_PICKUP', 'PICKED_UP', 'IN_TRANSIT', 'AT_DESTINATION']);
+        return ! in_array($this->status, [TripStatus::Delivered, TripStatus::Cancelled]);
     }
 
     public function canBeCancelled(): bool
     {
-        return in_array($this->status, ['ASSIGNED', 'DRIVER_EN_ROUTE']);
+        return $this->status->canCancel();
     }
 
     public function cancel(string $reason): void
     {
         $this->update([
-            'status' => 'CANCELLED',
+            'status' => TripStatus::Cancelled,
             'cancellation_reason' => $reason,
             'cancelled_at' => now(),
         ]);
