@@ -25,7 +25,7 @@ return new class extends Migration
     {
         $list = implode(', ', array_map(fn ($v) => "'{$v}'", $values));
 
-        DB::statement("ALTER TABLE delivery_requests DROP CONSTRAINT IF EXISTS delivery_requests_status_check");
+        DB::statement('ALTER TABLE delivery_requests DROP CONSTRAINT IF EXISTS delivery_requests_status_check');
         DB::statement("ALTER TABLE delivery_requests ADD CONSTRAINT delivery_requests_status_check CHECK (status IN ({$list}))");
     }
 };

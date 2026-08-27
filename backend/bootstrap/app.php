@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\AttachCorsHeadersToErrors;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUserIsDriver;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,9 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
-            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
-            'driver' => \App\Http\Middleware\EnsureUserIsDriver::class,
+            'active' => EnsureUserIsActive::class,
+            'admin' => EnsureUserIsAdmin::class,
+            'driver' => EnsureUserIsDriver::class,
         ]);
 
         // API-only app: no named "login" route exists. The framework default

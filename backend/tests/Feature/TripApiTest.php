@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DeliveryRequest;
-use App\Models\Offer;
+use App\Models\RequestStop;
 use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,6 +14,7 @@ class TripApiTest extends TestCase
     use RefreshDatabase;
 
     private User $client;
+
     private User $driver;
 
     protected function setUp(): void
@@ -193,14 +194,14 @@ class TripApiTest extends TestCase
     public function test_driver_can_get_waypoints(): void
     {
         $request = DeliveryRequest::factory()->create();
-        \App\Models\RequestStop::factory()->create([
+        RequestStop::factory()->create([
             'delivery_request_id' => $request->id,
             'type' => 'PICKUP',
             'order' => 0,
             'latitude' => 33.5731,
             'longitude' => -7.5898,
         ]);
-        \App\Models\RequestStop::factory()->create([
+        RequestStop::factory()->create([
             'delivery_request_id' => $request->id,
             'type' => 'DESTINATION',
             'order' => 1,

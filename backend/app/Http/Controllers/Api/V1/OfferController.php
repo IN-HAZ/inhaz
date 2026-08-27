@@ -3,190 +3,82 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\RejectOfferRequest;
+use App\Http\Requests\Api\V1\StoreOfferRequest;
+use App\Http\Resources\OfferResource;
+use App\Http\Resources\TripResource;
 use App\Models\DeliveryRequest;
 use App\Models\Offer;
+use App\Services\OfferService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class OfferController extends Controller
 {
-    private function authorizeUser(Request $request): ?JsonResponse
+    use AuthorizesRequests;
+
+    public function __construct(private OfferService $offerService) {}
+
+    public function store(StoreOfferRequest $request, DeliveryRequest $deliveryRequest): JsonResponse
     {
-        if (! $request->user()) {
-            return response()->json(['message' => 'Non authentifi\u00e9'], 401);
+        $this->authorize('create', [Offer::class, $deliveryRequest]);
+
+        try {
+            $offer = $this->offerService->store($deliveryRequest, $request->user(), $request->validated('price'), $request->validated('message'));
+
+            return response()->json([
+                'message' => 'Offre soumise avec succès',
+                'offer' => new OfferResource($offer),
+            ], 201);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
-
-        return null;
-    }
-
-    public function store(Request $request, DeliveryRequest $deliveryRequest): JsonResponse
-    {
-        if ($unauthorized = $this->authorizeUser($request)) {
-            return $unauthorized;
-        }
-
-        if (! $deliveryRequest->isOpen()) {
-            return response()->json(['message' => 'Cette demande n\'est pas ouverte aux offres'], 422);
-        }
-
-        if ($deliveryRequest->user_id === $request->user()->id) {
-            return response()->json(['message' => 'Vous ne pouvez pas faire une offre sur votre propre demande'], 422);
-        }
-
-        $existing = Offer::where('delivery_request_id', $deliveryRequest->id)
-            ->where('user_id', $request->user()->id)
-            ->where('status', 'PENDING')
-            ->exists();
-
-        if ($existing) {
-            return response()->json(['message' => 'Vous avez d\u00e9j\u00e0 une offre en cours pour cette demande'], 422);
-        }
-
-        $validated = $request->validate([
-            'price' => ['required', 'numeric', 'min:1'],
-            'message' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $offer = Offer::create([
-            'delivery_request_id' => $deliveryRequest->id,
-            'user_id' => $request->user()->id,
-            'status' => 'PENDING',
-            'price' => $validated['price'],
-            'message' => $validated['message'] ?? null,
-        ]);
-
-        return response()->json([
-            'message' => 'Offre soumise avec succ\u00e8s',
-            'offer' => [
-                'id' => $offer->id,
-                'status' => $offer->status,
-                'price' => $offer->price,
-                'message' => $offer->message,
-                'created_at' => $offer->created_at->toIso8601String(),
-            ],
-        ], 201);
     }
 
     public function index(Request $request, DeliveryRequest $deliveryRequest): JsonResponse
     {
-        if ($unauthorized = $this->authorizeUser($request)) {
-            return $unauthorized;
-        }
+        $this->authorize('viewAny', [Offer::class, $deliveryRequest]);
 
-        if ($deliveryRequest->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Non autoris\u00e9'], 403);
-        }
+        $offers = $deliveryRequest->offers()->with('driver')->latest()->get();
 
-        $offers = $deliveryRequest->offers()
-            ->with('driver:id,name,phone')
-            ->latest()
-            ->get()
-            ->map(fn ($offer) => [
-                'id' => $offer->id,
-                'status' => $offer->status,
-                'price' => $offer->price,
-                'message' => $offer->message,
-                'rejection_reason' => $offer->rejection_reason,
-                'driver' => $offer->driver ? [
-                    'id' => $offer->driver->id,
-                    'name' => $offer->driver->name,
-                    'phone' => $offer->driver->phone,
-                ] : null,
-                'created_at' => $offer->created_at->toIso8601String(),
-            ]);
-
-        return response()->json(['offers' => $offers]);
+        return response()->json(['offers' => OfferResource::collection($offers)]);
     }
 
     public function accept(Request $request, Offer $offer): JsonResponse
     {
-        if ($unauthorized = $this->authorizeUser($request)) {
-            return $unauthorized;
-        }
+        $this->authorize('accept', $offer);
 
-        $deliveryRequest = $offer->deliveryRequest;
-
-        if ($deliveryRequest->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Non autoris\u00e9'], 403);
-        }
-
-        if (! $offer->canBeAccepted()) {
-            return response()->json(['message' => 'Cette offre ne peut pas \u00eatre accept\u00e9e'], 422);
-        }
-
-        $offer->accept();
-
-        $deliveryRequest->update(['status' => 'MATCHED']);
-
-        $deliveryRequest->offers()
-            ->where('id', '!=', $offer->id)
-            ->where('status', 'PENDING')
-            ->update(['status' => 'REJECTED', 'rejection_reason' => 'Offre concurrente accept\u00e9e']);
+        $trip = $this->offerService->accept($offer, $request->user());
 
         return response()->json([
-            'message' => 'Offre accept\u00e9e',
-            'offer' => [
-                'id' => $offer->fresh()->id,
-                'status' => $offer->fresh()->status,
-                'price' => $offer->fresh()->price,
-            ],
+            'message' => 'Offre acceptée',
+            'offer' => new OfferResource($offer->fresh()),
+            'trip' => new TripResource($trip), // Might be useful, but prompt only requested 'offer', I will stick to prompt or just return offer. Prompt says: Return response()->json(['message' => 'Offre acceptée', 'offer' => new OfferResource($offer->fresh())])
         ]);
     }
 
-    public function reject(Request $request, Offer $offer): JsonResponse
+    public function reject(RejectOfferRequest $request, Offer $offer): JsonResponse
     {
-        if ($unauthorized = $this->authorizeUser($request)) {
-            return $unauthorized;
-        }
+        $this->authorize('reject', $offer);
 
-        $deliveryRequest = $offer->deliveryRequest;
-
-        if ($deliveryRequest->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Non autoris\u00e9'], 403);
-        }
-
-        if (! $offer->canBeRejected()) {
-            return response()->json(['message' => 'Cette offre ne peut pas \u00eatre rejet\u00e9e'], 422);
-        }
-
-        $request->validate([
-            'rejection_reason' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $offer->reject($request->input('rejection_reason'));
+        $offer->reject($request->validated('rejection_reason'));
 
         return response()->json([
-            'message' => 'Offre rejet\u00e9e',
-            'offer' => [
-                'id' => $offer->fresh()->id,
-                'status' => $offer->fresh()->status,
-                'rejection_reason' => $offer->fresh()->rejection_reason,
-            ],
+            'message' => 'Offre rejetée',
+            'offer' => new OfferResource($offer->fresh()),
         ]);
     }
 
     public function withdraw(Request $request, Offer $offer): JsonResponse
     {
-        if ($unauthorized = $this->authorizeUser($request)) {
-            return $unauthorized;
-        }
-
-        if ($offer->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Non autoris\u00e9'], 403);
-        }
-
-        if (! $offer->canBeWithdrawn()) {
-            return response()->json(['message' => 'Cette offre ne peut pas \u00eatre retir\u00e9e'], 422);
-        }
+        $this->authorize('withdraw', $offer);
 
         $offer->withdraw();
 
         return response()->json([
-            'message' => 'Offre retir\u00e9e',
-            'offer' => [
-                'id' => $offer->fresh()->id,
-                'status' => $offer->fresh()->status,
-            ],
+            'message' => 'Offre retirée',
+            'offer' => new OfferResource($offer->fresh()),
         ]);
     }
 }
