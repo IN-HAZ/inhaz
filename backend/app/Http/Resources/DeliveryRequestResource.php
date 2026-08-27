@@ -24,6 +24,7 @@ class DeliveryRequestResource extends JsonResource
             'instructions' => $this->instructions,
             'cancellation_reason' => $this->cancellation_reason,
             'expires_at' => $this->expires_at?->toIso8601String(),
+            'offers_count' => $this->whenCounted('offers'),
             'stops' => RequestStopResource::collection($this->whenLoaded('stops')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
