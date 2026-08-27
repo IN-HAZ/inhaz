@@ -10,6 +10,8 @@ class DeliveryRequestService
 {
     public function create(User $user, array $data, array $stops = []): DeliveryRequest
     {
+        $data['status'] = $data['status'] ?? DeliveryRequestStatus::Open;
+
         $deliveryRequest = $user->deliveryRequests()->create($data);
 
         foreach ($stops as $stop) {

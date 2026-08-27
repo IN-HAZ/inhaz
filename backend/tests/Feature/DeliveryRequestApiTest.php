@@ -51,7 +51,7 @@ class DeliveryRequestApiTest extends TestCase
         $this->assertDatabaseHas('delivery_requests', [
             'user_id' => $this->client->id,
             'title' => 'Colis important',
-            'status' => 'DRAFT',
+            'status' => 'OPEN',
         ]);
     }
 
