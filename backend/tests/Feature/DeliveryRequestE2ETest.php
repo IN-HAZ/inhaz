@@ -65,7 +65,7 @@ class DeliveryRequestE2ETest extends TestCase
         $getResponse->assertOk()
             ->assertJsonPath('request.id', $requestId)
             ->assertJsonPath('request.title', 'Colis urgent Casablanca to Rabat')
-            ->assertJsonPath('request.status', 'DRAFT')
+            ->assertJsonPath('request.status', 'OPEN')
             ->assertJsonCount(2, 'request.stops');
 
         $updateResponse = $this->actingAs($this->client)->putJson("/api/v1/requests/{$requestId}", [
