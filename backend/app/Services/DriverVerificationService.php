@@ -2,17 +2,17 @@
 
 namespace App\Services;
 
+use App\Enums\DocumentType;
+use App\Enums\DriverProfileStatus;
 use App\Models\DriverDocument;
 use App\Models\DriverProfile;
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
 
 class DriverVerificationService
 {
     public function approveDocument(DriverDocument $document, int $verifierId): DriverDocument
     {
         $document->update([
-            'status' => 'APPROVED',
+            'status' => DriverProfileStatus::Approved,
             'verified_at' => now(),
             'verified_by' => $verifierId,
         ]);
@@ -25,7 +25,7 @@ class DriverVerificationService
     public function rejectDocument(DriverDocument $document, int $verifierId, string $reason): DriverDocument
     {
         $document->update([
-            'status' => 'REJECTED',
+            'status' => DriverProfileStatus::Rejected,
             'verified_at' => now(),
             'verified_by' => $verifierId,
             'rejection_reason' => $reason,
@@ -33,9 +33,9 @@ class DriverVerificationService
 
         $driverProfile = $document->driverProfile;
 
-        if ($driverProfile->status !== 'REJECTED') {
+        if ($driverProfile->status !== DriverProfileStatus::Rejected) {
             $driverProfile->update([
-                'status' => 'REJECTED',
+                'status' => DriverProfileStatus::Rejected,
                 'rejected_at' => now(),
                 'rejection_reason' => $reason,
             ]);
@@ -47,7 +47,7 @@ class DriverVerificationService
     public function approveDriver(DriverProfile $driverProfile, int $verifierId): DriverProfile
     {
         $driverProfile->update([
-            'status' => 'APPROVED',
+            'status' => DriverProfileStatus::Approved,
             'approved_at' => now(),
             'rejected_at' => null,
             'rejection_reason' => null,
@@ -59,7 +59,7 @@ class DriverVerificationService
     public function rejectDriver(DriverProfile $driverProfile, int $verifierId, string $reason): DriverProfile
     {
         $driverProfile->update([
-            'status' => 'REJECTED',
+            'status' => DriverProfileStatus::Rejected,
             'rejected_at' => now(),
             'rejection_reason' => $reason,
         ]);
@@ -69,18 +69,18 @@ class DriverVerificationService
 
     protected function checkAllDocumentsApproved(DriverProfile $driverProfile): void
     {
-        $requiredTypes = ['CIN', 'REGISTRATION', 'INSURANCE', 'DRIVING_LICENSE'];
+        $requiredTypes = array_column(DocumentType::cases(), 'value');
 
         $approvedTypes = $driverProfile->documents()
-            ->where('status', 'APPROVED')
+            ->where('status', DriverProfileStatus::Approved)
             ->pluck('type')
             ->toArray();
 
         $allApproved = count(array_intersect($requiredTypes, $approvedTypes)) === count($requiredTypes);
 
-        if ($allApproved && $driverProfile->status !== 'APPROVED') {
+        if ($allApproved && $driverProfile->status !== DriverProfileStatus::Approved) {
             $driverProfile->update([
-                'status' => 'APPROVED',
+                'status' => DriverProfileStatus::Approved,
                 'approved_at' => now(),
                 'rejected_at' => null,
                 'rejection_reason' => null,
