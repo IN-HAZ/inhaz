@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\DeliveryRequestStatus;
 use App\Models\DeliveryRequest;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -17,7 +18,7 @@ class DeliveryRequestFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'status' => 'DRAFT',
+            'status' => DeliveryRequestStatus::Draft,
             'title' => fake()->sentence(),
             'description' => fake()->paragraph(),
             'package_weight' => fake()->randomFloat(2, 1, 50),
