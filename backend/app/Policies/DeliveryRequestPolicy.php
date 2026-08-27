@@ -9,7 +9,7 @@ class DeliveryRequestPolicy
 {
     public function view(User $user, DeliveryRequest $deliveryRequest): bool
     {
-        return $user->id === $deliveryRequest->user_id;
+        return $user->id === $deliveryRequest->user_id || $deliveryRequest->isOpen();
     }
 
     public function update(User $user, DeliveryRequest $deliveryRequest): bool

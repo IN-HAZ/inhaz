@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, DollarSign, Clock, Package } from 'lucide-react-nati
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { offersApi, BrowseRequest } from '@/lib/api/offers';
+import { requestsApi } from '@/lib/api/requests';
 import { getErrorMessage } from '@/lib/api/errors';
 
 export default function RequestDetailScreen() {
@@ -16,8 +17,13 @@ export default function RequestDetailScreen() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['browse-detail', id],
     queryFn: async () => {
-      const result = await offersApi.browse(1);
-      return result.requests.find((r) => r.id === Number(id)) || null;
+      try {
+        const response = await requestsApi.get(Number(id));
+        return response.request as unknown as BrowseRequest;
+      } catch {
+        const result = await offersApi.browse(1);
+        return result.requests.find((r) => r.id === Number(id)) || null;
+      }
     },
     enabled: !!id,
   });
