@@ -74,6 +74,7 @@ class DriverVerificationService
         $approvedTypes = $driverProfile->documents()
             ->where('status', DriverProfileStatus::Approved)
             ->pluck('type')
+            ->map(fn ($type) => $type instanceof DocumentType ? $type->value : $type)
             ->toArray();
 
         $allApproved = count(array_intersect($requiredTypes, $approvedTypes)) === count($requiredTypes);
