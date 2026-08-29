@@ -2,13 +2,12 @@
 
 set -euo pipefail
 
-# Colors for rich terminal output
 GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 REPO_NAME="${REPO_NAME:-IN-HAZ/inhaz}"
 PROJECT_TITLE="${PROJECT_TITLE:-inHaz Platform Backlog}"
@@ -16,9 +15,7 @@ DRY_RUN=false
 
 for arg in "$@"; do
     case $arg in
-        --dry-run)
-            DRY_RUN=true
-            ;;
+        --dry-run) DRY_RUN=true ;;
     esac
 done
 
@@ -32,14 +29,13 @@ if [ "$DRY_RUN" = true ]; then
 fi
 echo ""
 
-# 1. Verify gh CLI authentication
 if ! gh auth status &>/dev/null; then
     echo -e "${RED}❌ gh CLI is not authenticated. Please run 'gh auth login' first.${NC}"
     exit 1
 fi
 echo -e "${GREEN}✓ gh CLI authenticated${NC}"
 
-# 2. Create Labels
+# 1. Labels
 echo -e "\n${BLUE}🏷️  Creating GitHub Labels...${NC}"
 LABELS=(
     "EPIC-01:7928CA:Core Infra & Auth"
@@ -67,27 +63,30 @@ for label_info in "${LABELS[@]}"; do
     if [ "$DRY_RUN" = true ]; then
         echo -e "  ${YELLOW}[Dry Run]${NC} Would create label: ${name} (${color})"
     else
-        gh label create "$name" --color "$color" --description "$desc" --repo "$REPO_NAME" --force &>/dev/null || true
-        echo -e "  ${GREEN}✓ Label:${NC} ${name}"
+        if gh label create "$name" --color "$color" --description "$desc" --repo "$REPO_NAME" --force &>/dev/null; then
+            echo -e "  ${GREEN}✓ Label:${NC} ${name}"
+        else
+            echo -e "  ${RED}✗ Label failed:${NC} ${name}"
+        fi
     fi
 done
 
-# 3. Create GitHub Project (V2)
+# 2. Project
 echo -e "\n${BLUE}📊 Creating GitHub Project V2...${NC}"
 if [ "$DRY_RUN" = true ]; then
     echo -e "  ${YELLOW}[Dry Run]${NC} Would create project: ${PROJECT_TITLE}"
 else
     OWNER="${REPO_NAME%%/*}"
-    PROJECT_URL=$(gh project create --owner "$OWNER" --title "$PROJECT_TITLE" --format json 2>/dev/null | grep -o '"url": *"[^"]*"' | cut -d'"' -f4 || true)
-    if [ -n "$PROJECT_URL" ]; then
-        echo -e "  ${GREEN}✓ Project created:${NC} ${PROJECT_URL}"
+    if PROJECT_JSON=$(gh project create --owner "$OWNER" --title "$PROJECT_TITLE" --format json 2>/tmp/proj_err); then
+        PROJECT_URL=$(echo "$PROJECT_JSON" | grep -o '"url": *"[^"]*"' | cut -d'"' -f4 || true)
+        echo -e "  ${GREEN}✓ Project created:${NC} ${PROJECT_URL:-<created, url unparsed>}"
     else
-        echo -e "  ${YELLOW}ℹ️  Project creation skipped or owner permissions restricted.${NC}"
+        echo -e "  ${YELLOW}ℹ️  Project creation failed or already exists:${NC} $(cat /tmp/proj_err)"
     fi
 fi
 
-# 4. Create User Story Issues & Add to Repo
-echo -e "\n${BLUE}📝 Creating 30 User Story Issues from dev/...${NC}"
+# 3. Issues
+echo -e "\n${BLUE}📝 Creating User Story Issues from dev/...${NC}"
 
 STORIES=(
     "epic-01-core-infra-and-auth|us-101-phone-otp-authentication|US-101|Phone OTP Authentication|P0|Sprint-1|EPIC-01"
@@ -141,6 +140,9 @@ STORIES=(
 )
 
 created_count=0
+failed_count=0
+skipped_count=0
+
 for story in "${STORIES[@]}"; do
     IFS="|" read -r epic_dir us_dir story_id title priority sprint epic_label <<< "$story"
     body_file="/home/bagi/Notes/dev/in-haz/dev/${epic_dir}/${us_dir}/README.md"
@@ -148,22 +150,33 @@ for story in "${STORIES[@]}"; do
 
     if [ "$DRY_RUN" = true ]; then
         echo -e "  ${YELLOW}[Dry Run]${NC} Would create issue: ${issue_title} (Labels: ${epic_label}, ${priority}, ${sprint})"
+        continue
+    fi
+
+    if [ ! -f "$body_file" ]; then
+        echo -e "  ${RED}❌ File not found:${NC} ${body_file}"
+        failed_count=$((failed_count + 1))
+        continue
+    fi
+
+    # Idempotency: skip if an issue with this exact title already exists
+    existing=$(gh issue list --repo "$REPO_NAME" --state all --search "in:title \"${issue_title}\"" --json title --jq ".[] | select(.title == \"${issue_title}\") | .title" 2>/dev/null || true)
+    if [ -n "$existing" ]; then
+        echo -e "  ${YELLOW}ℹ️  Already exists, skipping:${NC} ${issue_title}"
+        skipped_count=$((skipped_count + 1))
+        continue
+    fi
+
+    if ISSUE_URL=$(gh issue create \
+        --repo "$REPO_NAME" \
+        --title "$issue_title" \
+        --body-file "$body_file" \
+        --label "${epic_label},${priority},${sprint}" 2>/tmp/issue_err); then
+        echo -e "  ${GREEN}✓ Created:${NC} ${issue_title} -> ${ISSUE_URL}"
+        created_count=$((created_count + 1))
     else
-        if [ -f "$body_file" ]; then
-            ISSUE_URL=$(gh issue create \
-                --repo "$REPO_NAME" \
-                --title "$issue_title" \
-                --body-file "$body_file" \
-                --label "${epic_label},${priority},${sprint}" 2>/dev/null || true)
-            if [ -n "$ISSUE_URL" ]; then
-                echo -e "  ${GREEN}✓ Created:${NC} ${issue_title} -> ${ISSUE_URL}"
-                ((created_count++))
-            else
-                echo -e "  ${YELLOW}ℹ️  Already exists / Skipped:${NC} ${issue_title}"
-            fi
-        else
-            echo -e "  ${RED}❌ File not found:${NC} ${body_file}"
-        fi
+        echo -e "  ${RED}✗ Failed:${NC} ${issue_title} — $(cat /tmp/issue_err)"
+        failed_count=$((failed_count + 1))
     fi
 done
 
@@ -172,6 +185,6 @@ echo -e "${GREEN}====================================================${NC}"
 if [ "$DRY_RUN" = true ]; then
     echo -e "${GREEN}🎉 Dry run complete! Run without --dry-run to push issues to GitHub.${NC}"
 else
-    echo -e "${GREEN}🎉 Backlog setup complete! Processed ${created_count} User Story Issues.${NC}"
+    echo -e "${GREEN}🎉 Done. Created: ${created_count} | Skipped (existing): ${skipped_count} | Failed: ${failed_count}${NC}"
 fi
 echo -e "${GREEN}====================================================${NC}"
