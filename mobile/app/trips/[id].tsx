@@ -18,7 +18,7 @@ export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const isDriver = user?.role === 'DRIVER';
+  const isDriver = user?.role === 'driver';
   const [cancelReason, setCancelReason] = useState('');
   const [showCancel, setShowCancel] = useState(false);
   const [showRate, setShowRate] = useState(false);
