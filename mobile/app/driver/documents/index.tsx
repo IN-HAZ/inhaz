@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import { apiClient, API_HOST } from '../../../lib/api/client';
+import { apiClient } from '../../../lib/api/client';
 import { ArrowLeft, FileText, Plus, Eye, Check, Clock, X, CheckCircle } from 'lucide-react-native';
 
 interface Document {
@@ -43,9 +42,8 @@ export default function DocumentListScreen() {
     }
   };
 
-  const viewDocument = async (docId: number) => {
-    const url = `${API_HOST}/documents/${docId}/view`;
-    await WebBrowser.openBrowserAsync(url);
+  const viewDocument = (docId: number) => {
+    router.push(`/documents/${docId}`);
   };
 
   const allUploaded = REQUIRED_DOCS.every((type) =>

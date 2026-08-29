@@ -96,6 +96,7 @@ export default function RootLayout() {
           <Stack.Screen name="driver/vehicle" />
           <Stack.Screen name="driver/documents/index" />
           <Stack.Screen name="driver/documents/upload" />
+          <Stack.Screen name="documents/[id]" />
           <Stack.Screen name="requests/index" />
           <Stack.Screen name="requests/create" />
           <Stack.Screen name="requests/[id]" />
