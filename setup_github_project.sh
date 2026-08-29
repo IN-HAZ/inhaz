@@ -9,7 +9,9 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-REPO_NAME="${REPO_NAME:-IN-HAZ/inhaz}"
+# shellcheck source=_scripts_shared.sh
+source "$(dirname "$0")/_scripts_shared.sh"
+
 PROJECT_TITLE="${PROJECT_TITLE:-inHaz Platform Backlog}"
 DRY_RUN=false
 
@@ -170,7 +172,7 @@ for story in "${STORIES[@]}"; do
     if ISSUE_URL=$(gh issue create \
         --repo "$REPO_NAME" \
         --title "$issue_title" \
-        --body-file "$body_file" \
+        --body-file <(rewrite_body "$body_file" "$epic_dir" "$us_dir") \
         --label "${epic_label},${priority},${sprint}" 2>/tmp/issue_err); then
         echo -e "  ${GREEN}✓ Created:${NC} ${issue_title} -> ${ISSUE_URL}"
         created_count=$((created_count + 1))
