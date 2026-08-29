@@ -14,6 +14,7 @@ class OfferApiTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     private User $client;
+
     private User $driver;
 
     protected function setUp(): void

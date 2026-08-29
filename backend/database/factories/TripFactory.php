@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\TripStatus;
 use App\Models\DeliveryRequest;
 use App\Models\Offer;
 use App\Models\Trip;
@@ -22,7 +23,7 @@ class TripFactory extends Factory
             'offer_id' => Offer::factory(),
             'driver_user_id' => User::factory(),
             'client_user_id' => User::factory(),
-            'status' => 'ASSIGNED',
+            'status' => TripStatus::Assigned,
             'agreed_price' => fake()->randomFloat(2, 100, 1000),
             'assigned_at' => now(),
         ];

@@ -16,7 +16,7 @@ class DriverProfileResource extends Resource
 {
     protected static ?string $model = DriverProfile::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-user-group';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-user-group';
 
     protected static ?string $navigationLabel = 'Chauffeurs';
 
@@ -50,8 +50,7 @@ class DriverProfileResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('vehicle.brand')
                     ->label('Véhicule')
-                    ->formatStateUsing(fn ($state, DriverProfile $record): string =>
-                        $record->vehicle ? "{$record->vehicle->brand} {$record->vehicle->model}" : '—'
+                    ->formatStateUsing(fn ($state, DriverProfile $record): string => $record->vehicle ? "{$record->vehicle->brand} {$record->vehicle->model}" : '—'
                     ),
                 Tables\Columns\TextColumn::make('documents_count')
                     ->counts('documents')
@@ -126,7 +125,10 @@ class DriverProfileResource extends Resource
                         ->label($label)
                         ->state(function (DriverProfile $record) use ($type): string {
                             $doc = $record->documents->firstWhere('type', $type);
-                            if (! $doc) return 'NON UPLOADÉ';
+                            if (! $doc) {
+                                return 'NON UPLOADÉ';
+                            }
+
                             return $doc->status;
                         })
                         ->badge()
@@ -138,7 +140,10 @@ class DriverProfileResource extends Resource
                         })
                         ->url(function (DriverProfile $record) use ($type): ?string {
                             $doc = $record->documents->firstWhere('type', $type);
-                            if (! $doc) return null;
+                            if (! $doc) {
+                                return null;
+                            }
+
                             return route('documents.view', $doc);
                         })
                         ->openUrlInNewTab()

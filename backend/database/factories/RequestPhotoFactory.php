@@ -17,8 +17,8 @@ class RequestPhotoFactory extends Factory
     {
         return [
             'delivery_request_id' => DeliveryRequest::factory(),
-            'file_path' => 'request-photos/1/' . fake()->uuid() . '.jpg',
-            'file_name' => fake()->uuid() . '.jpg',
+            'file_path' => 'request-photos/1/'.fake()->uuid().'.jpg',
+            'file_name' => fake()->uuid().'.jpg',
             'file_type' => 'image/jpeg',
             'file_size' => fake()->numberBetween(10000, 5000000),
         ];

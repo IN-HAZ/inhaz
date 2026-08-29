@@ -2,19 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
+#[Fillable([
+    'phone',
+    'code_hash',
+    'expires_at',
+    'used',
+    'attempts',
+])]
 class Otp extends Model
 {
     public const MAX_ATTEMPTS = 3;
-
-    protected $fillable = [
-        'phone',
-        'code_hash',
-        'expires_at',
-        'used',
-        'attempts',
-    ];
 
     protected function casts(): array
     {
