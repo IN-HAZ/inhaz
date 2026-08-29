@@ -6,14 +6,15 @@
 set -euo pipefail
 
 REPO_NAME="${REPO_NAME:-IN-HAZ/inhaz}"
-# Images are served from the develop branch (post this PR).
-RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/IN-HAZ/inhaz/develop}"
+# The repo is private, so raw.githubusercontent URLs 404. Use the github.com
+# blob page for the develop branch instead (browsable by the viewer).
+RAW_BASE="${RAW_BASE:-https://github.com/IN-HAZ/inhaz/blob/develop}"
 
 # Rewrite markdown image refs from relative `](assets/x.png)` to absolute
-# raw.githubusercontent URLs so GitHub can render them in issue bodies.
+# github.com blob URLs (browsable file pages, not inline <img>).
 # $1 = README path  $2 = epic_dir  $3 = us_dir
 rewrite_body() {
-    sed -E "s#\]\(assets/([^)]+)\)#](${RAW_BASE}/${2}/${3}/assets/\1)#g" "$1"
+    sed -E "s#\]\(assets/([^)]+)\)#](${RAW_BASE}/dev/${2}/${3}/assets/\1)#g" "$1"
 }
 
 # user stories: epic_dir|us_dir|story_id|title|priority|sprint|epic_label

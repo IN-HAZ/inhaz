@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Rewrite existing GitHub issue bodies so inline images resolve from the
-# develop branch (raw.githubusercontent URLs) instead of broken relative paths.
+# Rewrite existing GitHub issue bodies so inline image refs point at the
+# github.com blob pages (the repo is private, so raw URLs 404) instead of
+# broken relative paths.
 #
 
 set -euo pipefail
@@ -53,7 +54,7 @@ for story in "${STORIES[@]}"; do
 
     if [ "$DRY_RUN" = true ]; then
         echo -e "  ${YELLOW}[Dry Run]${NC} #{${issue_number}} ${issue_title}"
-        echo -e "  ${BLUE}    would set body to:${NC} $(rewrite_body "$body_file" "$epic_dir" "$us_dir" | grep -o 'raw.githubusercontent[^)]*' | head -1)"
+        echo -e "  ${BLUE}    would set body to:${NC} $(rewrite_body "$body_file" "$epic_dir" "$us_dir" | grep -o 'github.com/IN-HAZ[^)]*' | head -1)"
         continue
     fi
 
