@@ -25,6 +25,9 @@ up: env
 down:
 	$(COMPOSE_DEV) down
 
+down-v:
+	$(COMPOSE_DEV) down -v
+
 logs:
 	$(COMPOSE_DEV) logs -f
 
