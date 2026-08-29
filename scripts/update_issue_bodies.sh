@@ -63,7 +63,7 @@ for entry in "${issues[@]}"; do
     us_dir=$(basename "$(dirname "$readme")")
 
     # Rewrite relative `](assets/x.png)` refs to blob URLs on develop.
-    rewrite() { sed -E "s#\]\(assets/([^)]+)\)#](${RAW_BASE}/${epic_dir}/${us_dir}/assets/\1)#g" "$readme"; }
+    rewrite() { sed -E "s#\]\(assets/([^)]+)\)#](${RAW_BASE}/dev/${epic_dir}/${us_dir}/assets/\1)#g" "$readme"; }
 
     if [ "$DRY_RUN" = true ]; then
         echo -e "  ${YELLOW}[Dry Run]${NC} #{${num}} ${title}"
