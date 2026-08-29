@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\DriverProfileStatus;
 use App\Filament\Resources\DriverProfileResource\Pages;
 use App\Filament\Resources\DriverProfileResource\RelationManagers\DocumentsRelationManager;
 use App\Models\DriverProfile;
@@ -43,11 +44,12 @@ class DriverProfileResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Statut')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'PENDING' => 'warning',
-                        'APPROVED' => 'success',
-                        'REJECTED' => 'danger',
-                    }),
+                    ->color(fn (DriverProfileStatus $state): string => match ($state) {
+                        DriverProfileStatus::Pending => 'warning',
+                        DriverProfileStatus::Approved => 'success',
+                        DriverProfileStatus::Rejected => 'danger',
+                    })
+                    ->formatStateUsing(fn (DriverProfileStatus $state): string => $state->value),
                 Tables\Columns\TextColumn::make('vehicle.brand')
                     ->label('Véhicule')
                     ->formatStateUsing(fn ($state, DriverProfile $record): string => $record->vehicle ? "{$record->vehicle->brand} {$record->vehicle->model}" : '—'
@@ -83,6 +85,9 @@ class DriverProfileResource extends Resource
             'DRIVING_LICENSE' => 'Permis de conduire',
         ];
 
+        $firstDoc = fn (DriverProfile $record, string $type) => $record->documents
+            ->first(fn ($doc) => $doc->type->value === $type);
+
         return $schema->components([
             Section::make('Informations')
                 ->components([
@@ -94,11 +99,12 @@ class DriverProfileResource extends Resource
                     TextEntry::make('status')
                         ->label('Statut')
                         ->badge()
-                        ->color(fn (string $state): string => match ($state) {
-                            'PENDING' => 'warning',
-                            'APPROVED' => 'success',
-                            'REJECTED' => 'danger',
-                        }),
+                        ->color(fn (DriverProfileStatus $state): string => match ($state) {
+                            DriverProfileStatus::Pending => 'warning',
+                            DriverProfileStatus::Approved => 'success',
+                            DriverProfileStatus::Rejected => 'danger',
+                        })
+                        ->formatStateUsing(fn (DriverProfileStatus $state): string => $state->value),
                     TextEntry::make('rejection_reason')
                         ->label('Raison du rejet')
                         ->placeholder('Aucune'),
@@ -120,16 +126,16 @@ class DriverProfileResource extends Resource
                 ]),
             Section::make('Documents requis')
                 ->description('4 documents requis pour l\'approbation du chauffeur. Cliquez pour voir le fichier.')
-                ->components(array_map(function (string $type, string $label) {
+                ->components(array_map(function (string $type, string $label) use ($firstDoc) {
                     return TextEntry::make("document_{$type}")
                         ->label($label)
-                        ->state(function (DriverProfile $record) use ($type): string {
-                            $doc = $record->documents->firstWhere('type', $type);
+                        ->state(function (DriverProfile $record) use ($type, $firstDoc): string {
+                            $doc = $firstDoc($record, $type);
                             if (! $doc) {
                                 return 'NON UPLOADÉ';
                             }
 
-                            return $doc->status;
+                            return $doc->status->value;
                         })
                         ->badge()
                         ->color(fn (string $state): string => match ($state) {
@@ -138,8 +144,8 @@ class DriverProfileResource extends Resource
                             'REJECTED' => 'danger',
                             default => 'gray',
                         })
-                        ->url(function (DriverProfile $record) use ($type): ?string {
-                            $doc = $record->documents->firstWhere('type', $type);
+                        ->url(function (DriverProfile $record) use ($type, $firstDoc): ?string {
+                            $doc = $firstDoc($record, $type);
                             if (! $doc) {
                                 return null;
                             }
@@ -147,8 +153,8 @@ class DriverProfileResource extends Resource
                             return route('documents.view', $doc);
                         })
                         ->openUrlInNewTab()
-                        ->visible(function (DriverProfile $record) use ($type): bool {
-                            return $record->documents->firstWhere('type', $type) !== null;
+                        ->visible(function (DriverProfile $record) use ($type, $firstDoc): bool {
+                            return $firstDoc($record, $type) !== null;
                         });
                 }, array_keys($requiredDocs), array_values($requiredDocs))),
         ]);

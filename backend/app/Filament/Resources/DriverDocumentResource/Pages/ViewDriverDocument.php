@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\DriverDocumentResource\Pages;
 
+use App\Enums\DriverProfileStatus;
 use App\Filament\Resources\DriverDocumentResource;
 use App\Services\DriverVerificationService;
 use Filament\Actions\Action;
@@ -24,7 +25,7 @@ class ViewDriverDocument extends ViewRecord
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()
                 ->modalHeading('Approuver ce document ?')
-                ->visible(fn (): bool => $this->record->status !== 'APPROVED')
+                ->visible(fn (): bool => $this->record->status !== DriverProfileStatus::Approved)
                 ->action(function () {
                     app(DriverVerificationService::class)
                         ->approveDocument($this->record, auth()->id());
@@ -47,7 +48,7 @@ class ViewDriverDocument extends ViewRecord
                         ->required()
                         ->maxLength(500),
                 ])
-                ->visible(fn (): bool => $this->record->status !== 'APPROVED')
+                ->visible(fn (): bool => $this->record->status !== DriverProfileStatus::Approved)
                 ->action(function (array $data) {
                     app(DriverVerificationService::class)
                         ->rejectDocument($this->record, auth()->id(), $data['rejection_reason']);
