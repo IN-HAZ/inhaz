@@ -1,36 +1,62 @@
 # User Story: US-401 — Driver Nearby Request Feed & Quick Bidding
 
 **Story ID:** `US-401`
-**Epic:** [EPIC-04: Reverse Bidding & Negotiation Engine](../overview.md)
+**Epic:** [EPIC-04: Reverse Bidding & Negotiation Engine](../README.md)
 **Role:** Driver
 **Priority:** P0
 
 ---
 
-## 1. Implementation Status Audit
-*   **Backend (`backend/`):** **IMPLEMENTED**. `DeliveryRequestController@browse` handles searching open requests, `OfferController@store` handles offer submission (`POST /v1/requests/{id}/offers`).
-*   **Mobile (`mobile/`):** **NEEDS DESIGN SYSTEM UI ALIGNMENT**. Driver feed in `app/driver/` needs to apply the One-Handed Ergonomic Bidding layout and quick counter buttons (`+10%`, `+20%`).
+## 1. User Story Statement
+**As a** Driver,
+**I want to** view nearby delivery requests and quickly submit bids or counter-offers,
+**So that** I can secure delivery jobs efficiently with minimal interaction while driving.
 
 ---
 
-## 2. Design System Application & UI Specs
-Per `tech-spects/design_system.md`:
-*   **Driver Dashboard Header:** High-contrast `● ONLINE` status pill with dark surface `#100D14`. Displays daily earnings (`tabular-nums font-mono`).
-*   **Request Card Surface:** `bg-inhaz-surface-light` (light mode) or `bg-inhaz-dark-card` (`#18141F` dark mode) with `rounded-card` (16px radius).
-*   **Quick Counter Buttons:**
-    *   `[ Accept Proposed Price ]`: Solid Electric Purple (`bg-inhaz-purple`).
-    *   `[ +10% ]`: Dark counter button (`bg-inhaz-dark`, white text).
-    *   `[ +20% ]`: Dark counter button (`bg-inhaz-dark`, white text).
-    *   `[ Custom Counter ]`: Input field with `font-mono` MAD value.
+## 2. Implementation Status
+* **Backend:** NOT STARTED — `DeliveryRequestController@browse` and `OfferController@store` pending implementation.
+* **Mobile:** NOT STARTED — Driver nearby request feed UI and quick bidding components pending integration.
 
 ---
 
-## 3. Acceptance Criteria
+## 3. Design System & UI Specs
+
+### Design System Reference Mockups
+![Driver Nearby Requests Feed Screen](assets/nearby_feed_screen.png)
+
+
+## 4. Business Rules & Technical Requirements
+### 4.1 Nearby Request Filtering
+* Drivers can view open delivery requests matching their vehicle type within a configurable distance radius (default 15km).
+* Requests created by or currently assigned to the logged-in driver are excluded.
+
+### 4.2 Quick Bidding & Minimum Pricing
+* All submitted bids must be equal to or greater than the minimum delivery price of 20 MAD (configurable in `system_settings`).
+* Quick percentage counters (+10%, +20%) calculate based on the client's initial proposed price, rounded to the nearest integer MAD.
+
+### 4.3 Realtime Dispatch
+* Submitting an offer via `POST /api/v1/requests/{id}/offers` dispatches a WebSocket broadcast event over Laravel Reverb to the channel `private-request.{id}` within 200ms.
+
+---
+
+## 5. Acceptance Criteria (Gherkin)
 
 ```gherkin
-Scenario: Driver counters via one-handed Quick Action
-  Given I am in Driver Mode with "● ONLINE" status badge
-  When a nearby request card appears showing "Client Offer: 60 MAD"
-  And I tap the quick button "+20% (72 MAD)" (bg-inhaz-dark)
-  Then an offer of 72 MAD is submitted and streamed to the client
+Scenario: Driver views nearby delivery requests with radius filters
+  Given I am logged in as a verified driver with status "ONLINE"
+  When I open the "demandes_proximit_livreur" screen
+  Then I see open delivery requests within my selected distance filter
+  And I can toggle between Map and List view modes at the top
+
+Scenario: Driver submits a quick counter-offer
+  Given a nearby request card is displayed with proposed price "60 MAD"
+  When I tap the "+20%" quick-bid pill button
+  Then an offer of "72 MAD" is submitted to the backend
+  And the offer streams immediately to the client via Laravel Reverb
+
+Scenario: Driver attempts to submit bid below minimum price limit
+  Given a request card with proposed price "15 MAD"
+  When I tap "Accept" or enter a custom price of "15 MAD"
+  Then the system rejects the offer with a validation error "Le montant minimum est de 20 MAD"
 ```

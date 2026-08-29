@@ -1,7 +1,7 @@
-# User Story: US-702 — Filament Complaint & Dispute Resolution
+# User Story: US-703 — Filament Complaint & Dispute Resolution
 
-**Story ID:** `US-702`
-**Epic:** [EPIC-07: Admin Back-Office & Governance](../overview.md)
+**Story ID:** `US-703`
+**Epic:** [EPIC-07: Admin Back-Office & Governance](../README.md)
 **Role:** Admin
 **Priority:** P1
 

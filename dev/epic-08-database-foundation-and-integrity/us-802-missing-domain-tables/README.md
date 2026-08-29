@@ -38,10 +38,19 @@
 *   `admin_notes` Text nullable; timestamps
 *   Index: `(status, created_at)` for the Filament queue
 
-### 2.6 `audit_logs` (spec 08 §Filament governance)
-*   `id`, `user_id` FK nullable, `action` String (e.g. `driver.approved`)
-*   `target_type` String, `target_id` String, `old_values` JSON, `new_values` JSON
-*   `ip_address` String(45); `created_at` only (immutable)
+### 2.7 `saved_addresses` (spec 03 — unblocks EPIC-03 US-304)
+* `id` UUID PK, `user_id` FK → `users.id` (cascade), `label` String(50) (e.g., "Home", "Work", "Warehouse")
+* `address` Text, `latitude` Decimal(10,8), `longitude` Decimal(11,8); timestamps
+* Index: `(user_id, created_at)` for quick client location lookups
+
+### 2.8 `content_pages` (spec 09 — unblocks EPIC-09 US-901 & US-902)
+* `id` UUID PK, `slug` String unique indexed (e.g. `privacy`, `about`), `title` String(255)
+* `body_md` Text, `locale` String(10) default `fr`; timestamps
+
+### 2.9 `faq_items` (spec 09 — unblocks EPIC-09 US-903)
+* `id` UUID PK, `category` String(50) (e.g., `client`, `driver`, `payments`, `account`)
+* `question` Text, `answer` Text, `sort_order` Integer default 0; timestamps
+* Index: `(category, sort_order)` for grouped ordered display
 
 ---
 
@@ -55,10 +64,10 @@
 ## 4. Acceptance Criteria (Gherkin Format)
 
 ```gherkin
-Scenario: All spec'd tables exist
+Scenario: All spec'd domain tables exist
   Given migrations have been executed on a fresh database
   When I list all database tables
-  Then "messages", "payments", "commission_settlements", "system_settings", "complaints" and "audit_logs" exist
+  Then "messages", "payments", "commission_settlements", "system_settings", "complaints", "audit_logs", "saved_addresses", "content_pages" and "faq_items" exist
   And each table's columns, enums and indexes match its specification document
 
 Scenario: Chat message immutability
