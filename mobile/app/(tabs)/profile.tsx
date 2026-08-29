@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,16 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/store/auth';
 import { useToast } from '@/components/ui/ToastProvider';
 import { getErrorMessage } from '@/lib/api/errors';
-import { User, ChevronRight, LogOut, Car, Store, Mail, Phone, Pencil, Sparkles } from 'lucide-react-native';
+import { User, ChevronRight, LogOut, Car, Store, Mail, Phone, Pencil, Sparkles, FileText } from 'lucide-react-native';
+
+type DriverStatus = 'none' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
 const PURPLE = '#4B2861';
 const PURPLE_ACCENT = '#7C2DF5';
@@ -67,8 +70,38 @@ export default function ProfileTabScreen() {
   const [email, setEmail] = useState(user?.customer_profile?.email || '');
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [driverStatus, setDriverStatus] = useState<DriverStatus>('none');
+  const [statusLoaded, setStatusLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!user || user.role === 'driver') {
+      setDriverStatus('none');
+      setStatusLoaded(true);
+      return;
+    }
+    apiClient
+      .get('/driver/profile')
+      .then((res) => {
+        const status = res.data?.driver_profile?.status;
+        if (active) setDriverStatus(status === 'APPROVED' || status === 'REJECTED' ? status : status === 'PENDING' ? status : 'none');
+      })
+      .catch(() => {
+        if (active) setDriverStatus('none');
+      })
+      .finally(() => {
+        if (active) setStatusLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   const isDriver = user?.role === 'driver';
+  const driverStatusLabel =
+    driverStatus === 'PENDING' ? 'En attente' :
+    driverStatus === 'REJECTED' ? 'Rejeté' :
+    driverStatus === 'APPROVED' ? 'Approuvé' : '';
   const incomplete = !name.trim() && !email.trim();
   const displayName = user?.customer_profile?.name || user?.name || 'Client';
   const initial = displayName.charAt(0).toUpperCase();
@@ -224,7 +257,9 @@ export default function ProfileTabScreen() {
         </View>
 
         {/* ===== Chauffeur ===== */}
-        <Text className={sectionLabel}>{isDriver ? 'Espace chauffeur' : 'Chauffeur'}</Text>
+        <Text className={sectionLabel}>
+          {isDriver || driverStatus !== 'none' ? 'Espace chauffeur' : 'Chauffeur'}
+        </Text>
         <View className="mx-4 bg-white rounded-2xl border border-[#EDEDF0] overflow-hidden">
           {isDriver ? (
             <View>
@@ -242,7 +277,12 @@ export default function ProfileTabScreen() {
                 onPress={() => router.push('/driver/profile')}
               />
             </View>
-          ) : (
+          ) : !statusLoaded ? (
+            <View className="flex-row items-center px-4 py-4">
+              <ActivityIndicator size="small" color={PURPLE} />
+              <Text className="text-[#8A9099] text-[15px] ml-3">Chargement de votre espace chauffeur...</Text>
+            </View>
+          ) : driverStatus === 'none' ? (
             <TouchableOpacity
               onPress={() => router.push('/driver/onboarding')}
               activeOpacity={0.85}
@@ -259,6 +299,22 @@ export default function ProfileTabScreen() {
                 <ChevronRight size={15} color="white" />
               </View>
             </TouchableOpacity>
+          ) : (
+            <View>
+              <Row
+                icon={<Car size={16} color={PURPLE_ACCENT} />}
+                label="Ma candidature"
+                value={driverStatusLabel}
+                onPress={() => router.push('/driver/profile')}
+              />
+              <Divider />
+              <Row
+                icon={<FileText size={16} color={PURPLE_ACCENT} />}
+                label="Documents"
+                value="Suivre"
+                onPress={() => router.push('/driver/onboarding')}
+              />
+            </View>
           )}
         </View>
 

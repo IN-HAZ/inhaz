@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import { apiClient, API_HOST } from '../../lib/api/client';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { apiClient } from '../../lib/api/client';
 import { useAuthStore } from '../../lib/store/auth';
 import { useToast } from '../../components/ui/ToastProvider';
 import { getErrorMessage } from '../../lib/api/errors';
@@ -32,9 +31,11 @@ export default function DriverOnboardingScreen() {
   const { setUser } = useAuthStore();
   const toast = useToast();
 
-  useEffect(() => {
-    loadExistingData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadExistingData();
+    }, [])
+  );
 
   const loadExistingData = async () => {
     try {
@@ -178,9 +179,8 @@ export default function DriverOnboardingScreen() {
     return driverData?.documents?.find((d) => d.type === type)?.id ?? null;
   };
 
-  const viewDocument = async (docId: number) => {
-    const url = `${API_HOST}/documents/${docId}/view`;
-    await WebBrowser.openBrowserAsync(url);
+  const viewDocument = (docId: number) => {
+    router.push(`/documents/${docId}`);
   };
 
   if (initLoading) {
