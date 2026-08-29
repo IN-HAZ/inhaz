@@ -35,7 +35,9 @@ Route::prefix('v1')->group(function () {
     Route::prefix('driver')->middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/apply', [DriverController::class, 'apply']);
 
-        Route::middleware('driver')->group(function () {
+        // Onboarding: the applicant is still role=client until the admin
+        // approves. Only a driver_profile (any status) is required here.
+        Route::middleware('has-driver-profile')->group(function () {
             Route::get('/profile', [DriverController::class, 'profile']);
             Route::post('/documents', [DriverController::class, 'storeDocument']);
             Route::get('/documents', [DriverController::class, 'listDocuments']);

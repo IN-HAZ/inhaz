@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\DriverProfileResource\RelationManagers;
 
+use App\Enums\DocumentType;
+use App\Enums\DriverProfileStatus;
 use App\Services\DriverVerificationService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -34,25 +36,27 @@ class DocumentsRelationManager extends RelationManager
                 TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'CIN' => 'info',
-                        'REGISTRATION' => 'primary',
-                        'INSURANCE' => 'warning',
-                        'DRIVING_LICENSE' => 'success',
+                    ->color(fn (DocumentType $state): string => match ($state) {
+                        DocumentType::Cin => 'info',
+                        DocumentType::Registration => 'primary',
+                        DocumentType::Insurance => 'warning',
+                        DocumentType::DrivingLicense => 'success',
                         default => 'gray',
-                    }),
+                    })
+                    ->formatStateUsing(fn (DocumentType $state): string => $state->value),
                 TextColumn::make('file')
                     ->label('Fichier')
                     ->formatStateUsing(fn (string $state): string => basename($state)),
                 TextColumn::make('status')
                     ->label('Statut')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'PENDING' => 'warning',
-                        'APPROVED' => 'success',
-                        'REJECTED' => 'danger',
+                    ->color(fn (DriverProfileStatus $state): string => match ($state) {
+                        DriverProfileStatus::Pending => 'warning',
+                        DriverProfileStatus::Approved => 'success',
+                        DriverProfileStatus::Rejected => 'danger',
                         default => 'gray',
-                    }),
+                    })
+                    ->formatStateUsing(fn (DriverProfileStatus $state): string => $state->value),
                 TextColumn::make('rejection_reason')
                     ->label('Raison rejet')
                     ->limit(30)
@@ -80,7 +84,7 @@ class DocumentsRelationManager extends RelationManager
                     ->label('Approuver')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
-                    ->visible(fn ($record): bool => $record->status !== 'APPROVED')
+                    ->visible(fn ($record): bool => $record->status !== DriverProfileStatus::Approved)
                     ->requiresConfirmation()
                     ->modalHeading('Approuver ce document ?')
                     ->action(function ($record) {
@@ -97,7 +101,7 @@ class DocumentsRelationManager extends RelationManager
                     ->label('Rejeter')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn ($record): bool => $record->status !== 'APPROVED')
+                    ->visible(fn ($record): bool => $record->status !== DriverProfileStatus::Approved)
                     ->requiresConfirmation()
                     ->modalHeading('Rejeter ce document')
                     ->form([
