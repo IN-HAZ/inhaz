@@ -1,7 +1,7 @@
-# User Story: US-202 — Admin Document Inspection & Approval (Filament)
+# User Story: US-203 — Admin Document Inspection & Approval (Filament)
 
-**Story ID:** `US-202`
-**Epic:** [EPIC-02: Driver Onboarding & Document Verification](../overview.md)
+**Story ID:** `US-203`
+**Epic:** [EPIC-02: Driver Onboarding & Verification](../README.md)
 **Role:** Admin
 **Priority:** P0
 
