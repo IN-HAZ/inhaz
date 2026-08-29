@@ -2,21 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable([
+    'trip_id',
+    'reviewer_id',
+    'reviewee_id',
+    'score',
+    'comment',
+])]
 class Rating extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
-        'trip_id',
-        'reviewer_id',
-        'reviewee_id',
-        'score',
-        'comment',
-    ];
 
     protected function casts(): array
     {

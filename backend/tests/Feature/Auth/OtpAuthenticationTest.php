@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Notifications\OtpNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class OtpAuthenticationTest extends TestCase
@@ -130,7 +131,7 @@ class OtpAuthenticationTest extends TestCase
             ->assertUnauthorized();
     }
 
-    private function sendOtp(): \Illuminate\Testing\TestResponse
+    private function sendOtp(): TestResponse
     {
         return $this->postJson('/api/v1/auth/send-otp', ['phone' => self::PHONE]);
     }

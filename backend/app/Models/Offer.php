@@ -2,29 +2,31 @@
 
 namespace App\Models;
 
+use App\Enums\OfferStatus;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable([
+    'delivery_request_id',
+    'user_id',
+    'status',
+    'price',
+    'message',
+    'rejection_reason',
+    'expires_at',
+])]
 class Offer extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
-        'delivery_request_id',
-        'user_id',
-        'status',
-        'price',
-        'message',
-        'rejection_reason',
-        'expires_at',
-    ];
 
     protected function casts(): array
     {
         return [
             'price' => 'decimal:2',
             'expires_at' => 'datetime',
+            'status' => OfferStatus::class,
         ];
     }
 
@@ -40,54 +42,54 @@ class Offer extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'PENDING';
+        return $this->status === OfferStatus::Pending;
     }
 
     public function isAccepted(): bool
     {
-        return $this->status === 'ACCEPTED';
+        return $this->status === OfferStatus::Accepted;
     }
 
     public function isRejected(): bool
     {
-        return $this->status === 'REJECTED';
+        return $this->status === OfferStatus::Rejected;
     }
 
     public function isWithdrawn(): bool
     {
-        return $this->status === 'WITHDRAWN';
+        return $this->status === OfferStatus::Withdrawn;
     }
 
     public function canBeAccepted(): bool
     {
-        return $this->status === 'PENDING' && $this->deliveryRequest->isOpen();
+        return $this->status === OfferStatus::Pending && $this->deliveryRequest->isOpen();
     }
 
     public function canBeRejected(): bool
     {
-        return $this->status === 'PENDING' && $this->deliveryRequest->isOpen();
+        return $this->status === OfferStatus::Pending && $this->deliveryRequest->isOpen();
     }
 
     public function canBeWithdrawn(): bool
     {
-        return $this->status === 'PENDING';
+        return $this->status === OfferStatus::Pending;
     }
 
     public function accept(): void
     {
-        $this->update(['status' => 'ACCEPTED']);
+        $this->update(['status' => OfferStatus::Accepted]);
     }
 
-    public function reject(string $reason = null): void
+    public function reject(?string $reason = null): void
     {
         $this->update([
-            'status' => 'REJECTED',
+            'status' => OfferStatus::Rejected,
             'rejection_reason' => $reason,
         ]);
     }
 
     public function withdraw(): void
     {
-        $this->update(['status' => 'WITHDRAWN']);
+        $this->update(['status' => OfferStatus::Withdrawn]);
     }
 }

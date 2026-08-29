@@ -8,4 +8,5 @@ Route::get('/', function () {
 });
 
 Route::get('/documents/{document}/view', [DocumentController::class, 'show'])
-    ->name('documents.view');
+    ->name('documents.view')
+    ->middleware('auth:sanctum');

@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\DeliveryRequest;
-use App\Models\Offer;
 use App\Models\Rating;
 use App\Models\Trip;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -43,10 +43,10 @@ class TripDomainTest extends TestCase
     {
         $trip = Trip::factory()->create(['status' => 'ASSIGNED']);
         $trip->transitionTo('DRIVER_EN_ROUTE');
-        $this->assertEquals('DRIVER_EN_ROUTE', $trip->fresh()->status);
+        $this->assertEquals('DRIVER_EN_ROUTE', $trip->fresh()->status->value);
 
         $trip->transitionTo('AT_PICKUP');
-        $this->assertEquals('AT_PICKUP', $trip->fresh()->status);
+        $this->assertEquals('AT_PICKUP', $trip->fresh()->status->value);
 
         $trip->transitionTo('PICKED_UP');
         $this->assertNotNull($trip->fresh()->picked_up_at);
@@ -109,7 +109,7 @@ class TripDomainTest extends TestCase
             'reviewer_id' => $reviewer->id,
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         Rating::factory()->create([
             'trip_id' => $trip->id,
