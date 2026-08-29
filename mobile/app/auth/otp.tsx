@@ -31,7 +31,9 @@ export default function OtpScreen() {
       if (response.data.user && response.data.token) {
         await setSession(response.data.user, response.data.token);
         toast.success("Connexion réussie !");
-        router.replace("/(tabs)");
+        const u = response.data.user;
+        const incomplete = !u.name && !u.customer_profile?.name;
+        router.replace(incomplete ? '/(tabs)/profile' : '/(tabs)');
       }
     } catch (e: any) {
       toast.error(getErrorMessage(e));
