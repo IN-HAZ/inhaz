@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\DeliveryRequest;
 use App\Models\Offer;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -38,7 +39,7 @@ class OfferDomainTest extends TestCase
     {
         $offer = Offer::factory()->create();
 
-        $this->assertEquals('PENDING', $offer->status);
+        $this->assertEquals('PENDING', $offer->status->value);
         $this->assertTrue($offer->isPending());
     }
 
@@ -129,7 +130,7 @@ class OfferDomainTest extends TestCase
             'user_id' => $driver->id,
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         Offer::factory()->create([
             'delivery_request_id' => $request->id,

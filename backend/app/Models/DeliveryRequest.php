@@ -2,31 +2,44 @@
 
 namespace App\Models;
 
+use App\Enums\DeliveryRequestStatus;
+use App\Enums\OfferStatus;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[Fillable([
+    'user_id',
+    'status',
+    'title',
+    'description',
+    'package_weight',
+    'package_dimensions',
+    'proposed_price',
+    'budget_min',
+    'budget_max',
+    'preferred_date',
+    'preferred_time_slot',
+    'instructions',
+    'expires_at',
+    'cancellation_reason',
+])]
 class DeliveryRequest extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'status',
-        'title',
-        'description',
-        'package_weight',
-        'package_dimensions',
-        'proposed_price',
-        'budget_min',
-        'budget_max',
-        'preferred_date',
-        'preferred_time_slot',
-        'instructions',
-        'expires_at',
-        'cancellation_reason',
-    ];
+    public function scopeOpen(Builder $query): void
+    {
+        $query->where('status', DeliveryRequestStatus::Open);
+    }
+
+    public function scopeOwnedBy(Builder $query, User $user): void
+    {
+        $query->where('user_id', $user->id);
+    }
 
     protected function casts(): array
     {
@@ -37,6 +50,7 @@ class DeliveryRequest extends Model
             'budget_max' => 'decimal:2',
             'preferred_date' => 'datetime',
             'expires_at' => 'datetime',
+            'status' => DeliveryRequestStatus::class,
         ];
     }
 
@@ -72,7 +86,7 @@ class DeliveryRequest extends Model
 
     public function acceptedOffer()
     {
-        return $this->hasOne(Offer::class)->where('status', 'ACCEPTED');
+        return $this->hasOne(Offer::class)->where('status', OfferStatus::Accepted);
     }
 
     public function trip()
@@ -82,43 +96,43 @@ class DeliveryRequest extends Model
 
     public function isDraft(): bool
     {
-        return $this->status === 'DRAFT';
+        return $this->status === DeliveryRequestStatus::Draft;
     }
 
     public function isOpen(): bool
     {
-        return $this->status === 'OPEN';
+        return $this->status === DeliveryRequestStatus::Open;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === 'CANCELLED';
+        return $this->status === DeliveryRequestStatus::Cancelled;
     }
 
     public function isExpired(): bool
     {
-        return $this->status === 'EXPIRED';
+        return $this->status === DeliveryRequestStatus::Expired;
     }
 
     public function isMatched(): bool
     {
-        return $this->status === 'MATCHED';
+        return $this->status === DeliveryRequestStatus::Matched;
     }
 
     public function canBeModified(): bool
     {
-        return in_array($this->status, ['DRAFT', 'OPEN']);
+        return in_array($this->status, [DeliveryRequestStatus::Draft, DeliveryRequestStatus::Open]);
     }
 
     public function canBeCancelled(): bool
     {
-        return in_array($this->status, ['DRAFT', 'OPEN']);
+        return in_array($this->status, [DeliveryRequestStatus::Draft, DeliveryRequestStatus::Open]);
     }
 
     public function cancel(string $reason): void
     {
         $this->update([
-            'status' => 'CANCELLED',
+            'status' => DeliveryRequestStatus::Cancelled,
             'cancellation_reason' => $reason,
         ]);
     }

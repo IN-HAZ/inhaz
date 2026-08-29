@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,8 +17,13 @@ use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'phone', 'email', 'role'])]
 #[Hidden(['remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->isAdmin();
+    }
+
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -24,6 +32,7 @@ class User extends Authenticatable
         return [
             'phone_verified_at' => 'datetime',
             'is_active' => 'boolean',
+            'role' => UserRole::class,
         ];
     }
 
@@ -44,16 +53,16 @@ class User extends Authenticatable
 
     public function isClient(): bool
     {
-        return $this->role === 'client';
+        return $this->role === UserRole::Client;
     }
 
     public function isDriver(): bool
     {
-        return $this->role === 'driver';
+        return $this->role === UserRole::Driver;
     }
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === UserRole::Admin;
     }
 }

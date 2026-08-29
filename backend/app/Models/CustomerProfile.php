@@ -2,20 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable(['user_id', 'name', 'email', 'locale'])]
 class CustomerProfile extends Model
 {
     use HasFactory;
-
-    protected $fillable = [
-        'user_id',
-        'name',
-        'email',
-        'locale',
-    ];
 
     public function user(): BelongsTo
     {
