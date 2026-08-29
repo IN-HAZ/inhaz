@@ -35,7 +35,7 @@ failed_count=0
 
 for story in "${STORIES[@]}"; do
     IFS="|" read -r epic_dir us_dir story_id title priority sprint epic_label <<< "$story"
-    body_file="/home/bagi/Notes/dev/in-haz/dev/${epic_dir}/${us_dir}/README.md"
+    body_file="$SCRIPT_DIR/../dev/${epic_dir}/${us_dir}/README.md"
     issue_title="${story_id}: ${title}"
 
     if [ ! -f "$body_file" ]; then
