@@ -22,7 +22,7 @@ class RoleSwitchingTest extends TestCase
             ->assertJsonPath('allowed', false)
             ->assertJsonPath('reason', 'onboarding_required');
 
-        $this->assertSame('client', $user->fresh()->role);
+        $this->assertSame('client', $user->fresh()->role->value);
     }
 
     public function test_pending_driver_cannot_access_driver_mode(): void
@@ -39,7 +39,7 @@ class RoleSwitchingTest extends TestCase
             ->assertJsonPath('reason', 'verification_pending')
             ->assertJsonPath('verification_status', 'pending');
 
-        $this->assertSame('client', $user->fresh()->role);
+        $this->assertSame('client', $user->fresh()->role->value);
     }
 
     public function test_approved_driver_switches_to_driver_mode(): void
@@ -55,7 +55,7 @@ class RoleSwitchingTest extends TestCase
         ])->assertOk()
             ->assertJsonPath('allowed', true);
 
-        $this->assertSame('driver', $user->fresh()->role);
+        $this->assertSame('driver', $user->fresh()->role->value);
     }
 
     public function test_approved_driver_can_switch_back_to_client_mode(): void
@@ -68,7 +68,7 @@ class RoleSwitchingTest extends TestCase
             ->assertJsonPath('allowed', true)
             ->assertJsonPath('mode', 'client');
 
-        $this->assertSame('client', $user->fresh()->role);
+        $this->assertSame('client', $user->fresh()->role->value);
     }
 
     public function test_admin_cannot_downgrade_role_via_switching(): void
@@ -81,6 +81,6 @@ class RoleSwitchingTest extends TestCase
             ->assertJsonPath('allowed', false)
             ->assertJsonPath('reason', 'admin_role');
 
-        $this->assertSame('admin', $admin->fresh()->role);
+        $this->assertSame('admin', $admin->fresh()->role->value);
     }
 }

@@ -12,7 +12,9 @@ class OfferE2ETest extends TestCase
     use RefreshDatabase;
 
     private User $client;
+
     private User $driver1;
+
     private User $driver2;
 
     protected function setUp(): void
