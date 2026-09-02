@@ -11,7 +11,7 @@ export default function OtpScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const setUser = useAuthStore((s) => s.setUser);
+  const setSession = useAuthStore((s) => s.setSession);
   const toast = useToast();
 
   const handleVerifyOtp = async () => {
@@ -28,10 +28,12 @@ export default function OtpScreen() {
         code,
       });
 
-      if (response.data.user) {
-        setUser(response.data.user);
+      if (response.data.user && response.data.token) {
+        await setSession(response.data.user, response.data.token);
         toast.success("Connexion réussie !");
-        router.replace("/(tabs)");
+        const u = response.data.user;
+        const incomplete = !u.name && !u.customer_profile?.name;
+        router.replace(incomplete ? '/(tabs)/profile' : '/(tabs)');
       }
     } catch (e: any) {
       toast.error(getErrorMessage(e));
