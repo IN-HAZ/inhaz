@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\DriverProfileResource\Pages;
 
+use App\Enums\DriverProfileStatus;
 use App\Filament\Resources\DriverProfileResource;
 use App\Services\DriverVerificationService;
 use Filament\Actions\Action;
@@ -25,7 +26,7 @@ class ViewDriverProfile extends ViewRecord
                 ->requiresConfirmation()
                 ->modalHeading('Approuver ce chauffeur ?')
                 ->modalDescription('Le chauffeur pourra recevoir des courses.')
-                ->visible(fn (): bool => $this->record->status !== 'APPROVED')
+                ->visible(fn (): bool => $this->record->status !== DriverProfileStatus::Approved)
                 ->action(function () {
                     app(DriverVerificationService::class)
                         ->approveDriver($this->record, auth()->id());
@@ -48,7 +49,7 @@ class ViewDriverProfile extends ViewRecord
                         ->required()
                         ->maxLength(500),
                 ])
-                ->visible(fn (): bool => $this->record->status !== 'APPROVED')
+                ->visible(fn (): bool => $this->record->status !== DriverProfileStatus::Approved)
                 ->action(function (array $data) {
                     app(DriverVerificationService::class)
                         ->rejectDriver($this->record, auth()->id(), $data['rejection_reason']);

@@ -123,6 +123,46 @@ class DriverOnboardingTest extends TestCase
             ->assertJsonPath('documents.0.type', 'CIN');
     }
 
+    public function test_applicant_with_pending_profile_can_get_profile_vehicle_and_documents(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create(['role' => 'client']);
+        $profile = DriverProfile::create([
+            'user_id' => $user->id,
+            'status' => DriverProfileStatus::Pending,
+        ]);
+
+        $token = $user->createToken('mobile-app')->plainTextToken;
+        $file = UploadedFile::fake()->create('cin.pdf', 500, 'application/pdf');
+
+        $this->withToken($token)->getJson('/api/v1/driver/profile')
+            ->assertOk()
+            ->assertJsonPath('driver_profile.id', $profile->id);
+
+        $this->withToken($token)->postJson('/api/v1/driver/vehicle', [
+            'brand' => 'Dacia',
+            'model' => 'Dokker',
+            'registration_number' => '12345-A-6',
+        ])->assertOk()->assertJsonPath('vehicle.brand', 'Dacia');
+
+        $this->withToken($token)->postJson('/api/v1/driver/documents', [
+            'type' => 'CIN',
+            'file' => $file,
+            'expires_at' => now()->addYear()->format('Y-m-d'),
+        ])->assertStatus(201)->assertJsonPath('document.type', 'CIN');
+    }
+
+    public function test_client_without_driver_profile_is_rejected(): void
+    {
+        $user = User::factory()->create(['role' => 'client']);
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/v1/driver/profile')
+            ->assertStatus(403)
+            ->assertJsonPath('message', 'Accès réservé aux chauffeurs.');
+    }
+
     public function test_driver_can_register_vehicle(): void
     {
         $user = User::factory()->driver()->create();

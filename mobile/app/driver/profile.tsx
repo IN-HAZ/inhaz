@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import { apiClient, API_HOST } from '../../lib/api/client';
+import { apiClient } from '../../lib/api/client';
 import { useAuthStore } from '../../lib/store/auth';
 import { useToast } from '../../components/ui/ToastProvider';
 import { getErrorMessage } from '../../lib/api/errors';
@@ -54,9 +53,8 @@ export default function DriverProfileScreen() {
     }
   };
 
-  const viewDocument = async (docId: number) => {
-    const url = `${API_HOST}/documents/${docId}/view`;
-    await WebBrowser.openBrowserAsync(url);
+  const viewDocument = (docId: number) => {
+    router.push(`/documents/${docId}`);
   };
 
   const handleLogout = async () => {

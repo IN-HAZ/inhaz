@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\DocumentType;
+use App\Enums\DriverProfileStatus;
 use App\Filament\Resources\DriverDocumentResource\Pages;
 use App\Models\DriverDocument;
 use Filament\Actions;
@@ -39,20 +41,22 @@ class DriverDocumentResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'CIN' => 'info',
-                        'REGISTRATION' => 'primary',
-                        'INSURANCE' => 'warning',
-                        'DRIVING_LICENSE' => 'success',
-                    }),
+                    ->color(fn (DocumentType $state): string => match ($state) {
+                        DocumentType::Cin => 'info',
+                        DocumentType::Registration => 'primary',
+                        DocumentType::Insurance => 'warning',
+                        DocumentType::DrivingLicense => 'success',
+                    })
+                    ->formatStateUsing(fn (DocumentType $state): string => $state->value),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Statut')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'PENDING' => 'warning',
-                        'APPROVED' => 'success',
-                        'REJECTED' => 'danger',
-                    }),
+                    ->color(fn (DriverProfileStatus $state): string => match ($state) {
+                        DriverProfileStatus::Pending => 'warning',
+                        DriverProfileStatus::Approved => 'success',
+                        DriverProfileStatus::Rejected => 'danger',
+                    })
+                    ->formatStateUsing(fn (DriverProfileStatus $state): string => $state->value),
                 Tables\Columns\TextColumn::make('expires_at')
                     ->label('Expire le')
                     ->dateTime('d/m/Y')
@@ -92,20 +96,22 @@ class DriverDocumentResource extends Resource
                     TextEntry::make('type')
                         ->label('Type')
                         ->badge()
-                        ->color(fn (string $state): string => match ($state) {
-                            'CIN' => 'info',
-                            'REGISTRATION' => 'primary',
-                            'INSURANCE' => 'warning',
-                            'DRIVING_LICENSE' => 'success',
-                        }),
+                        ->color(fn (DocumentType $state): string => match ($state) {
+                            DocumentType::Cin => 'info',
+                            DocumentType::Registration => 'primary',
+                            DocumentType::Insurance => 'warning',
+                            DocumentType::DrivingLicense => 'success',
+                        })
+                        ->formatStateUsing(fn (DocumentType $state): string => $state->value),
                     TextEntry::make('status')
                         ->label('Statut')
                         ->badge()
-                        ->color(fn (string $state): string => match ($state) {
-                            'PENDING' => 'warning',
-                            'APPROVED' => 'success',
-                            'REJECTED' => 'danger',
-                        }),
+                        ->color(fn (DriverProfileStatus $state): string => match ($state) {
+                            DriverProfileStatus::Pending => 'warning',
+                            DriverProfileStatus::Approved => 'success',
+                            DriverProfileStatus::Rejected => 'danger',
+                        })
+                        ->formatStateUsing(fn (DriverProfileStatus $state): string => $state->value),
                     TextEntry::make('driverProfile.user.phone')
                         ->label('Chauffeur'),
                     TextEntry::make('expires_at')
