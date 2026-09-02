@@ -1,15 +1,21 @@
 import { View, Text, TouchableOpacity, FlatList, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Search, MapPin, Package, ChevronRight, DollarSign } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { offersApi, BrowseRequest } from '@/lib/api/offers';
 import { getErrorMessage } from '@/lib/api/errors';
+import { useAuthStore } from '@/lib/store/auth';
 
 export default function MarketplaceScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+
+  if (user?.role !== 'driver') {
+    return <Redirect href="/profile" />;
+  }
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['browse', page, search],

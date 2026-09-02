@@ -20,7 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function TripsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const isDriver = user?.role === 'DRIVER';
+  const isDriver = user?.role === 'driver';
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['trips', isDriver ? 'driver' : 'client'],
