@@ -1,10 +1,11 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ArrowLeft, MapPin, Package, Plus, X } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { requestsApi, CreateRequestPayload } from '@/lib/api/requests';
 import { getErrorMessage } from '@/lib/api/errors';
+import { useAuthStore } from '@/lib/store/auth';
 
 interface StopInput {
   type: 'PICKUP' | 'DESTINATION';
@@ -15,7 +16,12 @@ interface StopInput {
 
 export default function CreateRequestScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
+
+  if (user?.role === 'driver') {
+    return <Redirect href="/driver/dashboard" />;
+  }
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

@@ -19,6 +19,7 @@ import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from '../components/ui/ToastProvider';
 import { useAuthStore } from '../lib/store/auth';
+import { useAppPermissions } from '../lib/permissions';
 
 export {
   ErrorBoundary,
@@ -62,6 +63,9 @@ export default function RootLayout() {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Initialize and request all app boot permissions in one centralized call
+  useAppPermissions(loaded && !isLoading);
 
   useEffect(() => {
     if (isLoading || !loaded) return;
