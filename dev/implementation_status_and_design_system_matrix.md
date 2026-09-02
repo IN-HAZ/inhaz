@@ -3,7 +3,7 @@
 **Repository:** `inHAZ` (P2P Urban Freight Platform — Morocco)  
 **Last Updated:** 2026-09-02  
 **Total Epics:** 10  
-**Total User Stories:** 36  
+**Total User Stories:** 39  
 
 ---
 
@@ -11,9 +11,9 @@
 
 | Status | Count | Percentage | Definition |
 | :--- | :---: | :---: | :--- |
-| 🟢 **`done`** | **17** | **47.2%** | End-to-end implemented (backend API, mobile UI / Filament admin, unit/feature tests passing). |
-| 🟡 **`done_partial`** | **10** | **27.8%** | Backend or Mobile foundation exists; full feature parity, UI screens, or integrations pending. |
-| 🔴 **`todo`** | **9** | **25.0%** | Spec defined; implementation not yet started or screen placeholder only. |
+| 🟢 **`done`** | **17** | **43.6%** | End-to-end implemented (backend API, mobile UI / Filament admin, unit/feature tests passing). |
+| 🟡 **`done_partial`** | **10** | **25.6%** | Backend or Mobile foundation exists; full feature parity, UI screens, or integrations pending. |
+| 🔴 **`todo`** | **12** | **30.8%** | Spec defined; implementation not yet started or screen placeholder only. |
 | ⚪ **`blocked`** | **0** | **0.0%** | Hard blocker prevents implementation. |
 
 ---
@@ -23,16 +23,16 @@
 | Epic ID | Title | Priority | Total US | 🟢 Done | 🟡 Partial | 🔴 Todo |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | **EPIC-01** | [Core Infrastructure & Authentication](#epic-01-core-infrastructure--authentication) | P0 | 6 | 4 | 1 | 1 |
-| **EPIC-02** | [Driver Onboarding & Verification](#epic-02-driver-onboarding--verification) | P0 | 5 | 4 | 1 | 0 |
+| **EPIC-02** | [Driver Onboarding & Verification](#epic-02-driver-onboarding--verification) | P0 | 5 | 5 | 0 | 0 |
 | **EPIC-03** | [Request Creation & Geospatial](#epic-03-request-creation--geospatial) | P0 | 4 | 1 | 2 | 1 |
 | **EPIC-04** | [Reverse Bidding & Negotiation](#epic-04-reverse-bidding--negotiation) | P0 | 3 | 2 | 1 | 0 |
 | **EPIC-05** | [Trip Execution, Tracking & Chat](#epic-05-trip-execution-tracking--chat) | P0 | 3 | 1 | 1 | 1 |
 | **EPIC-06** | [Payments, Commission & Ratings](#epic-06-payments-commission--ratings) | P1 | 4 | 2 | 2 | 0 |
 | **EPIC-07** | [Admin Back-Office & Governance](#epic-07-admin-back-office--governance) | P1 | 4 | 1 | 1 | 2 |
-| **EPIC-08** | [Database Foundation & Integrity](#epic-08-database-foundation--integrity) | P0 | 4 | 2 | 1 | 1 |
+| **EPIC-08** | [Database Foundation & Integrity](#epic-08-database-foundation--integrity) | P0 | 4 | 1 | 2 | 1 |
 | **EPIC-09** | [Legal & App Info](#epic-09-legal--app-info) | P2 | 3 | 0 | 0 | 3 |
 | **EPIC-10** | [Localisation & i18n](#epic-10-localisation--i18n) | P2 | 3 | 0 | 0 | 3 |
-| **TOTAL** | | | **36** | **17** | **10** | **9** |
+| **TOTAL** | | | **39** | **17** | **10** | **12** |
 
 ---
 
@@ -83,15 +83,15 @@
 
 #### US-104: Personal Info Screen
 * **State:** 🟡 `done_partial`
-* **Summary:** View and edit personal profile information (name, avatar, read-only phone number).
+* **Summary:** View and edit personal profile information (name, email, read-only phone number).
 * **Related Files:**
   * Spec: [dev/epic-01-core-infra-and-auth/us-104-personal-info-screen/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-01-core-infra-and-auth/us-104-personal-info-screen/README.md)
-  * Backend Controller: [backend/app/Http/Controllers/Api/V1/AuthController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/AuthController.php) (`GET /me`, `PUT /profile`)
+  * Backend Controller: [backend/app/Http/Controllers/Api/V1/AuthController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/AuthController.php) (`GET /me`, `PUT /me`)
   * Backend Request: [backend/app/Http/Requests/Api/V1/Profile/UpdateProfileRequest.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Requests/Api/V1/Profile/UpdateProfileRequest.php)
   * Backend Test: [backend/tests/Feature/Auth/UserProfileTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/Auth/UserProfileTest.php)
-  * Mobile Driver Profile Screen: [mobile/app/driver/profile.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/profile.tsx)
-* **Details & Status:** Backend profile retrieval and update endpoints are fully functional. Driver profile screen exists in mobile.
-* **Problems / Notes:** A standalone Client Personal Info edit screen (`mobile/app/profile/edit.tsx`) with avatar upload picker is pending dedicated mobile screen construction.
+  * Mobile Profile Screen: [mobile/app/(tabs)/profile.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/(tabs)/profile.tsx)
+* **Details & Status:** Backend profile retrieval (`GET /me`) and update (`PUT /me`) endpoints are fully functional. Mobile app includes profile viewing and inline name/email editing on `mobile/app/(tabs)/profile.tsx`.
+* **Problems / Notes:** Dedicated profile picture / avatar photo picker upload (`POST /api/v1/profile/avatar`) is pending implementation.
 
 #### US-105: Profile Configuration Screen
 * **State:** 🔴 `todo`
@@ -127,7 +127,7 @@
   * Backend Models: [backend/app/Models/DriverDocument.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/DriverDocument.php), [backend/app/Models/Vehicle.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/Vehicle.php)
   * Backend Test: [backend/tests/Feature/Driver/DriverOnboardingTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/Driver/DriverOnboardingTest.php)
   * Mobile Screens: [mobile/app/driver/onboarding.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/onboarding.tsx), [mobile/app/driver/documents/upload.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/documents/upload.tsx), [mobile/app/driver/vehicle.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/vehicle.tsx)
-* **Details & Status:** Document upload API with validation (PDF, JPEG, PNG, max 10MB), secure streaming endpoint (`GET /api/v1/driver/documents/{id}/stream`), vehicle creation, and step-by-step mobile UI flow.
+* **Details & Status:** Document upload API with validation (PDF, JPEG, PNG, max 10MB), secure streaming endpoint (`GET /api/v1/driver/documents/{id}/view`), vehicle creation, and step-by-step mobile UI flow.
 * **Problems / Notes:** None.
 
 #### US-202: Driver Pending Validation Screen
@@ -137,7 +137,7 @@
   * Spec: [dev/epic-02-driver-onboarding-and-verification/us-202-driver-pending-validation-screen/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-02-driver-onboarding-and-verification/us-202-driver-pending-validation-screen/README.md)
   * Backend Enum: [backend/app/Enums/DriverProfileStatus.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Enums/DriverProfileStatus.php)
   * Mobile Screen: [mobile/app/driver/onboarding.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/onboarding.tsx)
-* **Details & Status:** Mobile onboarding screen checks driver status (`pending_review`, `approved`, `rejected`), displays warning banner, and blocks marketplace access until approved.
+* **Details & Status:** Mobile onboarding screen checks driver status (`PENDING`, `APPROVED`, `REJECTED`), displays warning banner, and blocks marketplace access until approved.
 * **Problems / Notes:** None.
 
 #### US-203: Admin Document Inspection & Approval (Filament)
@@ -152,14 +152,19 @@
 * **Problems / Notes:** None.
 
 #### US-204: Driver Dashboard
-* **State:** 🟡 `done_partial`
-* **Summary:** Driver central hub for managing active trips, viewing earnings overview, and toggling online status.
+* **State:** 🟢 `done`
+* **Summary:** Driver central hub for managing active trips, viewing earnings overview, monitoring commission balance, toggling online availability status, and previewing location map.
 * **Related Files:**
   * Spec: [dev/epic-02-driver-onboarding-and-verification/us-204-driver-dashboard/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-02-driver-onboarding-and-verification/us-204-driver-dashboard/README.md)
-  * Mobile Marketplace Screen: [mobile/app/driver/marketplace/index.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/marketplace/index.tsx)
-  * Backend Controller: [backend/app/Http/Controllers/Api/V1/DriverController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/DriverController.php)
-* **Details & Status:** Driver marketplace feed and active trip card are fully functional.
-* **Problems / Notes:** Aggregated statistics dashboard (weekly earnings chart, total trips completed, acceptance rate) needs dedicated UI summary widget.
+  * Backend Config: [backend/config/inhaz.php](file:///home/bagi/Notes/dev/in-haz/backend/config/inhaz.php) (`max_commission_debt_mad`)
+  * Backend Migration: [backend/database/migrations/2026_09_02_160000_add_is_online_to_driver_profiles_table.php](file:///home/bagi/Notes/dev/in-haz/backend/database/migrations/2026_09_02_160000_add_is_online_to_driver_profiles_table.php)
+  * Backend Controller: [backend/app/Http/Controllers/Api/V1/DriverController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/DriverController.php) (`dashboardSummary`, `toggleOnline`, `updateLocation`)
+  * Backend Test: [backend/tests/Feature/Driver/DriverDashboardTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/Driver/DriverDashboardTest.php)
+  * Global Map Component: [mobile/components/map/MapRenderer.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/components/map/MapRenderer.tsx)
+  * Mobile Screen: [mobile/app/driver/dashboard.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/dashboard.tsx)
+  * Mobile API Client: [mobile/lib/api/driver.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/driver.ts)
+* **Details & Status:** Fully implemented on backend and mobile. Features online/offline switch toggle (with green `#00C853` indicator), configurable commission debt threshold validation (200.00 MAD), daily earnings computation, active trip shortcut card, interactive cross-platform `MapRenderer`, and feature test coverage.
+* **Problems / Notes:** None.
 
 #### US-205: Driver Profile Screen
 * **State:** 🟢 `done`
@@ -483,7 +488,7 @@
 ## 🎯 4. Next Action Items & Priority Roadmap
 
 1. **Complete Partial High-Priority User Stories (Sprint 1 Refinement):**
-   * **US-104:** Create standalone Client Profile edit screen (`mobile/app/profile/edit.tsx`).
+   * **US-104:** Implement avatar photo picker and upload endpoint (`POST /api/v1/profile/avatar`).
    * **US-302:** Wire Google Places Autocomplete dropdown into request creation form (`mobile/app/requests/create.tsx`).
    * **US-502:** Integrate WebSocket / Reverb live driver location updates into active trip screen (`mobile/app/trips/[id].tsx`).
 
