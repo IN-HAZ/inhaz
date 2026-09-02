@@ -12,7 +12,7 @@ export default function HomeScreen() {
       <View className="flex-row items-center justify-between px-6 pt-14 pb-4 border-b border-gray-100">
         <Text className="text-2xl font-black text-primary-800">inHaz</Text>
         <TouchableOpacity
-          onPress={() => router.push('/driver/profile')}
+          onPress={() => router.push('/(tabs)/profile')}
           className="w-10 h-10 bg-primary-100 rounded-full items-center justify-center"
         >
           <User size={20} color="#4B2861" />
@@ -25,7 +25,7 @@ export default function HomeScreen() {
         </View>
         <Text className="text-gray-900 text-xl font-bold mb-2">Bienvenue, {user?.name || 'Client'}</Text>
         <Text className="text-gray-500 text-base text-center mb-8">
-          R\u00e9servez votre prochaine course en quelques secondes.
+          Réservez votre prochaine course en quelques secondes.
         </Text>
 
         <View className="flex-row gap-4 w-full">
@@ -37,13 +37,15 @@ export default function HomeScreen() {
             <Text className="text-white font-bold text-sm mt-1">Nouvelle demande</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push('/driver/marketplace')}
-            className="flex-1 bg-gray-50 border border-gray-200 py-4 rounded-2xl items-center"
-          >
-            <Store size={20} color="#4B2861" />
-            <Text className="text-primary-800 font-bold text-sm mt-1">Marketplace</Text>
-          </TouchableOpacity>
+          {user?.role === 'driver' && (
+            <TouchableOpacity
+              onPress={() => router.push('/driver/marketplace')}
+              className="flex-1 bg-gray-50 border border-gray-200 py-4 rounded-2xl items-center"
+            >
+              <Store size={20} color="#4B2861" />
+              <Text className="text-primary-800 font-bold text-sm mt-1">Marketplace</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>

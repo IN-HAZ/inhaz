@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\AttachCorsHeadersToErrors;
+use App\Http\Middleware\EnsureUserHasDriverProfile;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsDriver;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'admin' => EnsureUserIsAdmin::class,
             'driver' => EnsureUserIsDriver::class,
+            'has-driver-profile' => EnsureUserHasDriverProfile::class,
         ]);
 
         // API-only app: no named "login" route exists. The framework default
