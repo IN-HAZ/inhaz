@@ -10,11 +10,14 @@ use App\Http\Resources\DriverProfileResource;
 use App\Http\Resources\VehicleResource;
 use App\Models\Trip;
 use App\Services\DriverService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DriverController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __construct(private DriverService $driverService) {}
 
     public function apply(Request $request): JsonResponse
@@ -36,24 +39,17 @@ class DriverController extends Controller
 
     public function profile(Request $request): JsonResponse
     {
-        $profile = $request->user()->driverProfile;
-
-        if (! $profile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
-        }
+        $driverProfile = $request->user()->driverProfile;
 
         return response()->json([
-            'driver_profile' => new DriverProfileResource($profile->load(['vehicle', 'documents'])),
+            'driver_profile' => new DriverProfileResource($driverProfile->load(['vehicle', 'documents'])),
         ]);
     }
 
     public function storeDocument(StoreDriverDocumentRequest $request): JsonResponse
     {
         $driverProfile = $request->user()->driverProfile;
-
-        if (! $driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
-        }
+        $this->authorize('storeDocument', $driverProfile);
 
         $document = $this->driverService->storeDocument(
             $driverProfile,
@@ -72,10 +68,6 @@ class DriverController extends Controller
     {
         $driverProfile = $request->user()->driverProfile;
 
-        if (! $driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
-        }
-
         return response()->json([
             'documents' => DriverDocumentResource::collection($driverProfile->documents),
         ]);
@@ -84,10 +76,7 @@ class DriverController extends Controller
     public function storeVehicle(Request $request): JsonResponse
     {
         $driverProfile = $request->user()->driverProfile;
-
-        if (! $driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
-        }
+        $this->authorize('storeVehicle', $driverProfile);
 
         $validated = $request->validate([
             'brand' => 'required|string|max:255',
@@ -107,11 +96,6 @@ class DriverController extends Controller
     {
         $user = $request->user();
         $driverProfile = $user->driverProfile;
-
-        if (! $driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
-        }
-
         $todayStart = now()->startOfDay();
 
         $completedTripsTodayQuery = Trip::forDriver($user)
@@ -125,9 +109,7 @@ class DriverController extends Controller
         $commissionOwedToday = $todayEarnings * $commissionRate;
         $walletBalance = (float) ($driverProfile->wallet_balance ?? 0.0);
 
-        // Commission balance is total debt accrued (commission from completed trips - positive wallet credits)
         $commissionBalance = max(0.0, $commissionOwedToday - $walletBalance);
-
         $activeTrip = Trip::forDriver($user)->active()->first();
 
         return response()->json([
@@ -143,10 +125,7 @@ class DriverController extends Controller
     public function toggleOnline(Request $request): JsonResponse
     {
         $driverProfile = $request->user()->driverProfile;
-
-        if (! $driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
-        }
+        $this->authorize('toggleOnline', $driverProfile);
 
         $goingOnline = ! $driverProfile->is_online;
 
@@ -178,10 +157,7 @@ class DriverController extends Controller
     public function updateLocation(Request $request): JsonResponse
     {
         $driverProfile = $request->user()->driverProfile;
-
-        if (! $driverProfile) {
-            return response()->json(['message' => 'Profil chauffeur introuvable.'], 404);
-        }
+        $this->authorize('updateLocation', $driverProfile);
 
         $validated = $request->validate([
             'latitude' => 'required|numeric|between:-90,90',
