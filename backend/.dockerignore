@@ -8,9 +8,12 @@ storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
+storage/framework/testing/*
+storage/app/*
 tests
 *.md
 .vscode
 .idea
 .expo
 database/database.sqlite
+
