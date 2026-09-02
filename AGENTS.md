@@ -47,3 +47,19 @@ Tests use SQLite `:memory:` (configured in `backend/phpunit.xml`) — no DB setu
 - Styling: NativeWind/Tailwind with brand tokens defined in `tailwind.config.js` (`inhaz.purple` #7928CA, `rounded-sheet` 24px, etc.) and `constants/Colors.ts` — reuse these tokens, don't hardcode colors. Full design system: `tech-spects/design_system.md`.
 - Expo APIs change between SDK versions — consult the versioned docs at https://docs.expo.dev/versions/v57.0.0/ before using an Expo module.
 - No test/lint scripts exist; typecheck with `npx tsc --noEmit`.
+
+## Development Workflow & User Story Rules
+
+1. **Branch Naming Requirement**:
+   - For every User Story (US), a dedicated Git branch MUST be created before starting work.
+   - Branch naming format: `<epic>_<us>` (e.g., `1_01` for Epic 1 US 01, `2_05` for Epic 2 US 05, `10_02` for Epic 10 US 02).
+
+2. **Mandatory User Alignment & Pre-Implementation Planning**:
+   - **Interactive Alignment (Before Planning)**: Before creating an implementation plan, the assistant MUST ALWAYS ask clarifying questions and establish implementation details, architectural choices, UI designs, and technical constraints with the user. All decisions MUST be explicitly confirmed with the user.
+   - **Detailed Implementation Plan**: Once aligned with the user, create a detailed implementation plan (`implementation_plan.md`).
+   - **Explicit User Approval**: The assistant MUST wait for explicit user approval on the plan before writing or modifying any implementation code.
+
+3. **Progress Tracking Requirement**:
+   - The status and progress of all User Stories MUST be actively tracked and updated in [`dev/implementation_status_and_design_system_matrix.md`](dev/implementation_status_and_design_system_matrix.md). After completing or updating any User Story, update its status (`done`, `done_partial`, `todo`, `blocked`), related files list, and implementation details in this matrix.
+
+

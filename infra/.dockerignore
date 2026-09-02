@@ -8,8 +8,13 @@ storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
+storage/framework/testing/*
+storage/app/*
+backend/storage/framework/testing/*
+backend/storage/app/*
 tests
 *.md
 .vscode
 .idea
 .expo
+
