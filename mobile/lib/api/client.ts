@@ -1,5 +1,6 @@
 import axios from "axios";
 import Constants from "expo-constants";
+import { tokenStorage } from "@/lib/storage/secureStore";
 
 // .env wins over app.json extra so the LAN IP can be changed without touching app config.
 export const API_URL =
@@ -20,6 +21,8 @@ export const apiClient = axios.create({
 });
 
 let authToken: string | null = null;
+type UnauthenticatedListener = () => void;
+const unauthenticatedListeners = new Set<UnauthenticatedListener>();
 
 export function setAuthToken(token: string | null) {
   authToken = token;
@@ -34,7 +37,20 @@ export function getAuthToken() {
   return authToken;
 }
 
-apiClient.interceptors.request.use((config) => {
+export function onUnauthenticated(listener: UnauthenticatedListener) {
+  unauthenticatedListeners.add(listener);
+  return () => {
+    unauthenticatedListeners.delete(listener);
+  };
+}
+
+apiClient.interceptors.request.use(async (config) => {
+  if (!authToken) {
+    const token = await tokenStorage.getToken();
+    if (token) {
+      authToken = token;
+    }
+  }
   if (authToken) {
     config.headers.Authorization = `Bearer ${authToken}`;
   }
@@ -43,10 +59,13 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      // Session expired - will be handled by auth store
+      setAuthToken(null);
+      await tokenStorage.removeToken();
+      unauthenticatedListeners.forEach((listener) => listener());
     }
     return Promise.reject(error);
   }
 );
+
