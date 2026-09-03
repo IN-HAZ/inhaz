@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/auth";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getErrorMessage } from "@/lib/api/errors";
+import { otpSchema } from "@/lib/validation/auth";
 import { ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react-native";
 
 export default function OtpScreen() {
@@ -15,8 +16,9 @@ export default function OtpScreen() {
   const toast = useToast();
 
   const handleVerifyOtp = async () => {
-    if (!code || code.length !== 6) {
-      toast.error("Le code doit contenir 6 chiffres.");
+    const validation = otpSchema.safeParse(code);
+    if (!validation.success) {
+      toast.error(validation.error.issues[0]?.message || "Le code doit contenir 6 chiffres.");
       return;
     }
 
@@ -25,7 +27,7 @@ export default function OtpScreen() {
     try {
       const response = await apiClient.post("/auth/verify-otp", {
         phone,
-        code,
+        code: validation.data,
       });
 
       if (response.data.user && response.data.token) {
@@ -41,6 +43,7 @@ export default function OtpScreen() {
       setLoading(false);
     }
   };
+
 
   return (
     <KeyboardAvoidingView

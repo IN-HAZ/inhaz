@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { apiClient } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getErrorMessage } from "@/lib/api/errors";
+import { phoneSchema } from "@/lib/validation/auth";
 import { Phone, ArrowRight } from "lucide-react-native";
 
 export default function LoginScreen() {
@@ -12,23 +13,26 @@ export default function LoginScreen() {
   const toast = useToast();
 
   const handleSendOtp = async () => {
-    if (!phone || phone.length < 10) {
-      toast.error("Numéro de téléphone invalide.");
+    const validation = phoneSchema.safeParse(phone);
+    if (!validation.success) {
+      toast.error(validation.error.issues[0]?.message || "Numéro de téléphone invalide.");
       return;
     }
 
+    const sanitizedPhone = validation.data;
     setLoading(true);
 
     try {
-      await apiClient.post("/auth/send-otp", { phone });
+      await apiClient.post("/auth/send-otp", { phone: sanitizedPhone });
       toast.success("Code OTP envoyé. Vérifiez votre email (Mailpit).");
-      router.push({ pathname: "/auth/otp", params: { phone } });
+      router.push({ pathname: "/auth/otp", params: { phone: sanitizedPhone } });
     } catch (e: any) {
       toast.error(getErrorMessage(e));
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <KeyboardAvoidingView
