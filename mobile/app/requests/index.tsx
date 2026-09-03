@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, Package, ChevronRight, Clock, XCircle, CheckCircle } from 'lucide-react-native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { requestsApi, DeliveryRequestItem } from '@/lib/api/requests';
+import { DeliveryRequestItem } from '@/lib/api/requests';
+import { useDeliveryRequests } from '@/lib/hooks/useDeliveryRequests';
 import { getErrorMessage } from '@/lib/api/errors';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Clock }> = {
@@ -16,13 +16,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 
 export default function RequestsScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, error, refetch, isRefetching } = useQuery({
-    queryKey: ['requests', page],
-    queryFn: () => requestsApi.list(page),
-  });
+  const { requests, pagination, isLoading, error, refetch, isRefetching } = useDeliveryRequests(page);
 
   const renderItem = ({ item }: { item: DeliveryRequestItem }) => {
     const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.DRAFT;
@@ -99,8 +95,6 @@ export default function RequestsScreen() {
     );
   }
 
-  const requests = data?.requests || [];
-
   return (
     <View className="flex-1 bg-gray-50">
       <View className="flex-row items-center justify-between px-6 pt-14 pb-4 bg-white border-b border-gray-100">
@@ -137,7 +131,7 @@ export default function RequestsScreen() {
           contentContainerStyle={{ paddingVertical: 16 }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#4B2861" />}
           onEndReached={() => {
-            if (data?.pagination && page < data.pagination.last_page) {
+            if (pagination && page < pagination.last_page) {
               setPage((p) => p + 1);
             }
           }}
