@@ -22,8 +22,9 @@ class DatabaseSeeder extends Seeder
         // Admin
         $admin = User::firstOrCreate(
             ['email' => 'admin@inhaz.com'],
-            ['name' => 'Admin User', 'phone' => '+212600000000', 'role' => UserRole::Admin]
+            ['name' => 'Admin User', 'phone' => '+212600000000', 'role' => UserRole::Admin, 'password' => bcrypt('password')]
         );
+        $admin->update(['password' => bcrypt('password')]);
 
         // Driver
         $driver = User::firstOrCreate(
@@ -44,7 +45,7 @@ class DatabaseSeeder extends Seeder
             ]);
 
             $profile->documents()->create([
-                'type' => DocumentType::CIN,
+                'type' => DocumentType::Cin,
                 'file' => 'dummy/path',
                 'status' => DriverProfileStatus::Approved,
                 'verified_at' => now(),
