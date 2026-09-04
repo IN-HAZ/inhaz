@@ -43,6 +43,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/documents', [DriverController::class, 'listDocuments']);
             Route::get('/documents/{document}/view', [DocumentController::class, 'show']);
             Route::post('/vehicle', [DriverController::class, 'storeVehicle']);
+            Route::get('/dashboard-summary', [DriverController::class, 'dashboardSummary']);
+            Route::post('/toggle-online', [DriverController::class, 'toggleOnline']);
+            Route::post('/location', [DriverController::class, 'updateLocation']);
         });
     });
 

@@ -5,10 +5,10 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/store/auth';
@@ -142,6 +142,31 @@ export default function ProfileTabScreen() {
     router.replace('/auth/login');
   };
 
+  const handleSwitchRole = async (targetMode: 'client' | 'driver') => {
+    try {
+      const res = await apiClient.post('/auth/switch-role', { mode: targetMode });
+      if (res.data.allowed && res.data.user) {
+        setUser(res.data.user);
+        toast.success(targetMode === 'driver' ? 'Passé en Mode Chauffeur' : 'Passé en Mode Client');
+        if (targetMode === 'driver') {
+          router.push('/driver/dashboard');
+        }
+      } else {
+        toast.error('Changement de rôle non autorisé.');
+      }
+    } catch (e: any) {
+      toast.error(getErrorMessage(e));
+    }
+  };
+
+  const handleOpenDashboard = () => {
+    if (!isDriver) {
+      handleSwitchRole('driver');
+    } else {
+      router.push('/driver/dashboard');
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-[#F2F2F7]">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -258,16 +283,16 @@ export default function ProfileTabScreen() {
 
         {/* ===== Chauffeur ===== */}
         <Text className={sectionLabel}>
-          {isDriver || driverStatus !== 'none' ? 'Espace chauffeur' : 'Chauffeur'}
+          {isDriver || driverStatus === 'APPROVED' ? 'Espace chauffeur' : 'Chauffeur'}
         </Text>
         <View className="mx-4 bg-white rounded-2xl border border-[#EDEDF0] overflow-hidden">
-          {isDriver ? (
+          {isDriver || driverStatus === 'APPROVED' ? (
             <View>
               <Row
                 icon={<Store size={16} color={PURPLE_ACCENT} />}
-                label="Espace chauffeur"
-                value="Marché"
-                onPress={() => router.push('/driver/marketplace')}
+                label="Tableau de bord Chauffeur"
+                value="Accéder"
+                onPress={handleOpenDashboard}
               />
               <Divider />
               <Row
@@ -275,6 +300,13 @@ export default function ProfileTabScreen() {
                 label="Profil chauffeur"
                 value="Documents"
                 onPress={() => router.push('/driver/profile')}
+              />
+              <Divider />
+              <Row
+                icon={<Sparkles size={16} color={PURPLE_ACCENT} />}
+                label="Mode actif"
+                value={isDriver ? 'Chauffeur (Passer en Client)' : 'Client (Passer en Chauffeur)'}
+                onPress={() => handleSwitchRole(isDriver ? 'client' : 'driver')}
               />
             </View>
           ) : !statusLoaded ? (
