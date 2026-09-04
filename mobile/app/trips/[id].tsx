@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { tripsApi, TripItem, getNextStatus, getStatusLabel } from '@/lib/api/trips';
+import { TripItem, getNextStatus, getStatusLabel } from '@/lib/api/trips';
+import { useTripDetail } from '@/lib/hooks/useTripDetails';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useAuthStore } from '@/lib/store/auth';
 
@@ -16,7 +16,6 @@ const STATUS_COLORS: Record<string, string> = {
 export default function TripDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const isDriver = user?.role === 'driver';
   const [cancelReason, setCancelReason] = useState('');
@@ -25,49 +24,56 @@ export default function TripDetailScreen() {
   const [ratingScore, setRatingScore] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['trip', id],
-    queryFn: () => tripsApi.get(Number(id)),
-    enabled: !!id,
-  });
+  const {
+    trip,
+    isLoading,
+    error,
+    transitionStatus,
+    isTransitioning,
+    cancelTrip,
+    isCancelling,
+    rateTrip,
+    isRating,
+  } = useTripDetail(Number(id));
 
-  const transitionMutation = useMutation({
-    mutationFn: (status: string) => tripsApi.transition(Number(id), status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trip', id] });
-      queryClient.invalidateQueries({ queryKey: ['trips'] });
-    },
-  });
+  const handleTransition = async (status: string) => {
+    try {
+      await transitionStatus(status);
+    } catch (e: any) {
+      Alert.alert('Erreur', getErrorMessage(e));
+    }
+  };
 
-  const cancelMutation = useMutation({
-    mutationFn: (reason: string) => tripsApi.cancel(Number(id), reason),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trip', id] });
+  const handleCancel = async () => {
+    try {
+      await cancelTrip(cancelReason);
       setShowCancel(false);
       setCancelReason('');
-    },
-  });
+    } catch (e: any) {
+      Alert.alert('Erreur', getErrorMessage(e));
+    }
+  };
 
-  const rateMutation = useMutation({
-    mutationFn: () => tripsApi.rate(Number(id), ratingScore, ratingComment || undefined),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trip', id] });
+  const handleRate = async () => {
+    try {
+      await rateTrip({ score: ratingScore, comment: ratingComment || undefined });
       setShowRate(false);
       setRatingScore(0);
       setRatingComment('');
-    },
-  });
+    } catch (e: any) {
+      Alert.alert('Erreur', getErrorMessage(e));
+    }
+  };
 
   if (isLoading) return <View className="flex-1 bg-white items-center justify-center"><ActivityIndicator size="large" color="#4B2861" /></View>;
 
-  if (error || !data) return (
+  if (error || !trip) return (
     <View className="flex-1 bg-white items-center justify-center px-6">
       <Text className="text-gray-500">{error ? getErrorMessage(error) : 'Introuvable'}</Text>
       <TouchableOpacity onPress={() => router.back()} className="mt-4"><Text className="text-primary-800 font-semibold">Retour</Text></TouchableOpacity>
     </View>
   );
 
-  const trip: TripItem = data.trip;
   const statusColor = STATUS_COLORS[trip.status] || '#6B7280';
   const nextStatus = isDriver ? getNextStatus(trip.status) : null;
   const canCancel = trip.status === 'ASSIGNED' || trip.status === 'DRIVER_EN_ROUTE';
@@ -117,8 +123,8 @@ export default function TripDetailScreen() {
         )}
 
         {nextStatus && !isCompleted && trip.status !== 'CANCELLED' && (
-          <TouchableOpacity onPress={() => Alert.alert('Avancer', `Passer \u00e0 "${getStatusLabel(nextStatus)}" ?`, [{ text: 'Annuler', style: 'cancel' }, { text: 'Confirmer', onPress: () => transitionMutation.mutate(nextStatus) }])} disabled={transitionMutation.isPending} className="bg-primary-800 py-4 rounded-xl items-center mb-3" style={{ opacity: transitionMutation.isPending ? 0.6 : 1 }}>
-            <Text className="text-white font-bold text-sm">{transitionMutation.isPending ? 'En cours...' : `Marquer: ${getStatusLabel(nextStatus)}`}</Text>
+          <TouchableOpacity onPress={() => Alert.alert('Avancer', `Passer \u00e0 "${getStatusLabel(nextStatus)}" ?`, [{ text: 'Annuler', style: 'cancel' }, { text: 'Confirmer', onPress: () => handleTransition(nextStatus) }])} disabled={isTransitioning} className="bg-primary-800 py-4 rounded-xl items-center mb-3" style={{ opacity: isTransitioning ? 0.6 : 1 }}>
+            <Text className="text-white font-bold text-sm">{isTransitioning ? 'En cours...' : `Marquer: ${getStatusLabel(nextStatus)}`}</Text>
           </TouchableOpacity>
         )}
 
@@ -133,8 +139,8 @@ export default function TripDetailScreen() {
             <TextInput value={cancelReason} onChangeText={setCancelReason} placeholder="Motif d'annulation" multiline className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 mb-3" placeholderTextColor="#9CA3AF" textAlignVertical="top" />
             <View className="flex-row gap-3">
               <TouchableOpacity onPress={() => { setShowCancel(false); setCancelReason(''); }} className="flex-1 bg-gray-100 py-3 rounded-xl items-center"><Text className="text-gray-600 font-semibold text-sm">Non</Text></TouchableOpacity>
-              <TouchableOpacity onPress={() => { if (!cancelReason.trim()) { Alert.alert('Erreur', 'Motif requis'); return; } cancelMutation.mutate(cancelReason); }} disabled={cancelMutation.isPending} className="flex-1 bg-red-600 py-3 rounded-xl items-center">
-                {cancelMutation.isPending ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-sm">Confirmer</Text>}
+              <TouchableOpacity onPress={() => { if (!cancelReason.trim()) { Alert.alert('Erreur', 'Motif requis'); return; } handleCancel(); }} disabled={isCancelling} className="flex-1 bg-red-600 py-3 rounded-xl items-center">
+                {isCancelling ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-sm">Confirmer</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -157,8 +163,8 @@ export default function TripDetailScreen() {
               ))}
             </View>
             <TextInput value={ratingComment} onChangeText={setRatingComment} placeholder="Commentaire (optionnel)" multiline className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 mb-3" placeholderTextColor="#9CA3AF" textAlignVertical="top" />
-            <TouchableOpacity onPress={() => { if (ratingScore === 0) { Alert.alert('Erreur', 'Note requise'); return; } rateMutation.mutate(); }} disabled={rateMutation.isPending} className="bg-primary-800 py-3 rounded-xl items-center">
-              {rateMutation.isPending ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-sm">Envoyer</Text>}
+            <TouchableOpacity onPress={() => { if (ratingScore === 0) { Alert.alert('Erreur', 'Note requise'); return; } handleRate(); }} disabled={isRating} className="bg-primary-800 py-3 rounded-xl items-center">
+              {isRating ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-sm">Envoyer</Text>}
             </TouchableOpacity>
           </View>
         )}
