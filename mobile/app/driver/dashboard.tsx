@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, useRouter } from "expo-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     TrendingUp,
     Package,
@@ -24,7 +23,7 @@ import {
     Sparkles,
 } from "lucide-react-native";
 import { useAuthStore } from "@/lib/store/auth";
-import { driverApi } from "@/lib/api/driver";
+import { useDriverDashboard } from "@/lib/hooks/useDriverDashboard";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getErrorMessage } from "@/lib/api/errors";
 import { MapRenderer, Region, MapPoint } from "@/components/map/MapRenderer";
@@ -36,10 +35,19 @@ export default function DriverDashboardScreen() {
     const router = useRouter();
     const { user } = useAuthStore();
     const toast = useToast();
-    const queryClient = useQueryClient();
 
     const [location, setLocation] = useState<MapPoint | null>(null);
     const [region, setRegion] = useState<Region | null>(null);
+
+    const {
+        summary,
+        isLoading,
+        error,
+        refetch,
+        isRefetching,
+        toggleOnline,
+        isTogglingOnline,
+    } = useDriverDashboard();
 
     useEffect(() => {
         (async () => {
@@ -76,34 +84,18 @@ export default function DriverDashboardScreen() {
         toast.success("Position GPS réinitialisée.");
     };
 
+    const handleToggleOnline = async () => {
+        try {
+            const res = await toggleOnline();
+            toast.success(res.message);
+        } catch (err) {
+            toast.error(getErrorMessage(err));
+        }
+    };
+
     if (user?.role !== "driver") {
         return <Redirect href="/(tabs)/profile" />;
     }
-
-    const {
-        data: summary,
-        isLoading,
-        error,
-        refetch,
-        isRefetching,
-    } = useQuery({
-        queryKey: ["driver-dashboard-summary"],
-        queryFn: driverApi.getDashboardSummary,
-        refetchInterval: 15000,
-    });
-
-    const toggleOnlineMutation = useMutation({
-        mutationFn: driverApi.toggleOnline,
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({
-                queryKey: ["driver-dashboard-summary"],
-            });
-            toast.success(data.message);
-        },
-        onError: (err) => {
-            toast.error(getErrorMessage(err));
-        },
-    });
 
     const isOnline = summary?.is_online ?? false;
     const isApproved = summary?.driver_status === "APPROVED";
@@ -168,9 +160,9 @@ export default function DriverDashboardScreen() {
                         </View>
                         <Switch
                             value={isOnline}
-                            onValueChange={() => toggleOnlineMutation.mutate()}
+                            onValueChange={handleToggleOnline}
                             disabled={
-                                toggleOnlineMutation.isPending || !isApproved
+                                isTogglingOnline || !isApproved
                             }
                             trackColor={{ false: "#E4E4E7", true: "#00C853" }}
                             thumbColor="#FFFFFF"

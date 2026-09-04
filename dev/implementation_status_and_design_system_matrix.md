@@ -54,8 +54,8 @@
   * Backend Model & Command: [backend/app/Models/Otp.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/Otp.php), [backend/app/Console/Commands/PruneOtps.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Console/Commands/PruneOtps.php)
   * Backend Test: [backend/tests/Feature/Auth/OtpAuthenticationTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/Auth/OtpAuthenticationTest.php)
   * Mobile Screens: [mobile/app/auth/login.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/auth/login.tsx), [mobile/app/auth/otp.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/auth/otp.tsx)
-  * Mobile Store: [mobile/lib/store/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/store/auth.ts)
-* **Details & Status:** Fully implemented on backend and mobile. Features rate limiting (max 1 request per 60s, 3 failed verification attempts before invalidation), OTP hashing, and automated OTP cleanup.
+  * Mobile Store & Security: [mobile/lib/store/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/store/auth.ts), [mobile/lib/storage/secureStore.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/storage/secureStore.ts), [mobile/lib/api/client.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/client.ts), [mobile/lib/validation/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/validation/auth.ts)
+* **Details & Status:** Fully implemented on backend and mobile. Upgraded with hardware enclave secure store token persistence (`expo-secure-store`), 401 response interceptor event listeners for automated session teardown, and Zod client-side validation for Moroccan phone numbers and 6-digit OTP codes.
 * **Problems / Notes:** Production SMS Gateway driver (e.g., Twilio / Infobip) needs API key config in `.env`; local environment logs OTPs to Mailpit/database.
 
 #### US-102: Sanctum Token & Session Management
