@@ -181,17 +181,18 @@
 ### Epic 03: Request Creation & Geospatial
 **Spec Folder:** [dev/epic-03-request-creation-and-geospatial](file:///home/bagi/Notes/dev/in-haz/dev/epic-03-request-creation-and-geospatial)
 
-#### US-301: Client Delivery Request Form
+#### US-301: Client Delivery Request Form & 5-Step Wizard
 * **State:** 🟢 `done`
-* **Summary:** Client creation form for multi-stop freight requests specifying pickup/dropoff, vehicle type, cargo description, target price, and schedule.
+* **Summary:** Client 5-step delivery request wizard (`cr_er_une_demande`) with split-screen Google Map trajectory, step-by-step `PATCH` draft sync, S3 batch presigned URL photo uploads, vehicle card selection, 20 MAD price floor enforcement, and summary review screen.
 * **Related Files:**
   * Spec: [dev/epic-03-request-creation-and-geospatial/us-301-client-delivery-request-form/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-03-request-creation-and-geospatial/us-301-client-delivery-request-form/README.md)
-  * Backend Controller: [backend/app/Http/Controllers/Api/V1/DeliveryRequestController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/DeliveryRequestController.php)
-  * Backend Request: [backend/app/Http/Requests/Api/V1/StoreDeliveryRequestRequest.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Requests/Api/V1/StoreDeliveryRequestRequest.php)
+  * Backend Controller: [backend/app/Http/Controllers/Api/V1/DeliveryRequestController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/DeliveryRequestController.php), [backend/app/Http/Controllers/Api/V1/RequestPhotoController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/RequestPhotoController.php)
+  * Backend Service: [backend/app/Services/DeliveryRequestService.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Services/DeliveryRequestService.php)
   * Backend Models: [backend/app/Models/DeliveryRequest.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/DeliveryRequest.php), [backend/app/Models/RequestStop.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/RequestStop.php), [backend/app/Models/RequestPhoto.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/RequestPhoto.php)
+  * Backend Migration: [backend/database/migrations/2026_09_08_000000_add_vehicle_type_to_delivery_requests_table.php](file:///home/bagi/Notes/dev/in-haz/backend/database/migrations/2026_09_08_000000_add_vehicle_type_to_delivery_requests_table.php)
   * Backend Test: [backend/tests/Feature/DeliveryRequestApiTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/DeliveryRequestApiTest.php)
-  * Mobile Screen: [mobile/app/requests/create.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/create.tsx)
-* **Details & Status:** Form validation, multi-stop creation, cargo photo upload, and API payload submission are fully working.
+  * Mobile Screen & API: [mobile/app/requests/create.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/create.tsx), [mobile/lib/api/requests.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/requests.ts)
+* **Details & Status:** Fully implemented on backend and mobile. Features draft creation (`POST /api/v1/requests`), step-by-step state saving (`PATCH /api/v1/requests/{id}`), S3 batch presigned upload URLs (`POST /api/v1/requests/{id}/photos/presigned-urls`), photo confirmation (`POST /api/v1/requests/{id}/photos/confirm`), split-screen Google Map trajectory polyline, vehicle cards (Moto, Triporteur, Fourgonnette, Camion), proposed price controls with 20 MAD minimum floor banner, and publish action (`POST /api/v1/requests/{id}/publish`).
 * **Problems / Notes:** None.
 
 #### US-302: Google Maps / Places Autocomplete & Geocoding

@@ -1,5 +1,4 @@
 services:
-
   php:
     build:
       context: ..
@@ -73,10 +72,25 @@ services:
     networks:
       - inhaz
 
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: inhaz-rustfs
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      RUSTFS_ROOT_USER: inhaz
+      RUSTFS_ROOT_PASSWORD: inhazsecretkey
+    volumes:
+      - rustfsdata:/data
+    networks:
+      - inhaz
+
 volumes:
   pgdata:
   redisdata:
   vendor:
+  rustfsdata:
 
 networks:
   inhaz:

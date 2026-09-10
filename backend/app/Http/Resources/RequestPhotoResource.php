@@ -11,6 +11,7 @@ class RequestPhotoResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'photo_key' => $this->file_path,
             'file_name' => $this->file_name,
             'file_type' => $this->file_type,
             'file_size' => $this->file_size,

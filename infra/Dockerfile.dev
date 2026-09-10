@@ -24,7 +24,7 @@ RUN composer install \
     --ignore-platform-reqs
 
 COPY backend/ ./
-RUN composer dump-autoload
+RUN composer dump-autoload --no-scripts
 
 # --- Development ---
 FROM php:8.4-fpm-alpine
@@ -71,8 +71,11 @@ COPY --from=vendor /app/vendor/ ./vendor/
 COPY --from=frontend /app/public/build/ ./public/build/
 COPY backend/ ./
 
-RUN chown -R www-data:www-data /var/www/html \
+RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 775 storage bootstrap/cache
+# RUN chown -R www-data:www-data /var/www/html \
+#     && chmod -R 775 storage bootstrap/cache
 
 EXPOSE 9000
 

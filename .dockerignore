@@ -5,7 +5,8 @@
 node_modules
 vendor
 backend/vendor
-backend/storage/logs/*
+backend/storage
+backend/storage/*
 backend/storage/framework/cache/*
 backend/storage/framework/sessions/*
 backend/storage/framework/views/*

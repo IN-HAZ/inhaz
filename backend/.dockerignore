@@ -4,6 +4,8 @@
 !.env.example
 node_modules
 vendor
+storage/*
+!storage/.gitignore
 storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
@@ -16,4 +18,3 @@ tests
 .idea
 .expo
 database/database.sqlite
-
