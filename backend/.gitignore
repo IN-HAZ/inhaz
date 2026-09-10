@@ -22,6 +22,7 @@
 /storage/pail
 
 /bootstrap/cache/*
+/vendor
 !bootstrap/cache/.gitignore
 
 # PHP / Laravel tools
