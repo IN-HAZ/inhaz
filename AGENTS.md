@@ -62,5 +62,3 @@ Tests use SQLite `:memory:` (configured in `backend/phpunit.xml`) — no DB setu
 
 3. **Progress Tracking Requirement**:
    - The status and progress of all User Stories MUST be actively tracked and updated in [`dev/implementation_status_and_design_system_matrix.md`](dev/implementation_status_and_design_system_matrix.md). After completing or updating any User Story, update its status (`done`, `done_partial`, `todo`, `blocked`), related files list, and implementation details in this matrix.
-
-
