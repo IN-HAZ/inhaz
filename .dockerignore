@@ -1,19 +1,37 @@
+# Git
 .git
+
+# Env files
 .env
 .env.*
 !.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+mobile/.env
+mobile/.env.*
+!mobile/.env.example
+infra/.env
+infra/.env.*
+!infra/.env.example
+
+# Dependencies
 node_modules
 vendor
 backend/vendor
-backend/storage
-backend/storage/*
-backend/storage/framework/cache/*
-backend/storage/framework/sessions/*
-backend/storage/framework/views/*
-backend/storage/framework/testing/*
-backend/storage/app/*
 mobile/node_modules
+
+# Backend: storage & cache (never needed in image)
+backend/storage
+backend/bootstrap/cache
+
+# Mobile
 mobile/.expo
+mobile/dist
+
+# Misc
 *.md
 .vscode
 .idea
+.DS_Store
+token-optimizer

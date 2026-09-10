@@ -1,4 +1,3 @@
-# Environment Configuration
 .env
 .env.local
 .env.*.local

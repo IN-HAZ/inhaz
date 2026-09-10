@@ -1,9 +1,10 @@
+# Frontend
 FROM node:20-alpine AS frontend
 
 WORKDIR /app
 
 COPY backend/package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 COPY backend/vite.config.js ./
 COPY backend/resources/ ./resources/
@@ -11,7 +12,8 @@ COPY backend/public/ ./public/
 
 RUN npm run build
 
-# --- PHP Dependencies ---
+
+# PHP dependencies
 FROM composer:2 AS vendor
 
 WORKDIR /app
@@ -26,25 +28,22 @@ RUN composer install \
 COPY backend/ ./
 RUN composer dump-autoload --no-scripts
 
-# --- Development ---
+
+# Development
 FROM php:8.4-fpm-alpine
 
 RUN apk add --no-cache \
-    git \
-    curl \
-    libpq-dev \
-    libzip-dev \
-    icu-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    oniguruma-dev \
-    zlib-dev \
+        libpq-dev \
+        libzip-dev \
+        icu-dev \
+        libpng-dev \
+        libjpeg-turbo-dev \
+        freetype-dev \
+        oniguruma-dev \
     && apk add --no-cache --virtual .build-deps \
-    autoconf \
-    g++ \
-    make \
-    linux-headers \
+        autoconf \
+        g++ \
+        make \
     && docker-php-ext-configure gd \
         --with-freetype \
         --with-jpeg \
@@ -61,23 +60,18 @@ RUN apk add --no-cache \
     && docker-php-ext-enable redis \
     && apk del .build-deps
 
-COPY infra/docker/php/dev.ini $PHP_INI_DIR/conf.d/99-custom.ini
-COPY infra/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
 WORKDIR /var/www/html
 
-COPY --from=vendor /app/vendor/ ./vendor/
-COPY --from=frontend /app/public/build/ ./public/build/
-COPY backend/ ./
+COPY infra/docker/php/dev.ini $PHP_INI_DIR/conf.d/99-custom.ini
+COPY infra/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 storage bootstrap/cache
-# RUN chown -R www-data:www-data /var/www/html \
-#     && chmod -R 775 storage bootstrap/cache
+COPY --from=vendor /app/vendor ./vendor
+COPY --from=frontend /app/public/build ./public/build
+COPY backend/ .
 
-EXPOSE 9000
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 8000
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["php-fpm"]
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
