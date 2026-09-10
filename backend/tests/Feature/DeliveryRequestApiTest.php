@@ -315,4 +315,69 @@ class DeliveryRequestApiTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    public function test_client_can_patch_wizard_steps_and_publish(): void
+    {
+        // 1. Create draft
+        $createRes = $this->actingAs($this->client)->postJson('/api/v1/requests', []);
+        $createRes->assertStatus(201);
+        $requestId = $createRes->json('request.id');
+        $this->assertEquals('DRAFT', $createRes->json('request.status'));
+
+        // 2. Patch Step 1: locations
+        $step1Res = $this->actingAs($this->client)->patchJson("/api/v1/requests/{$requestId}", [
+            'step' => 'locations',
+            'stops' => [
+                ['type' => 'PICKUP', 'address' => 'Gare Agadir', 'latitude' => 30.42, 'longitude' => -9.59],
+                ['type' => 'DESTINATION', 'address' => 'Souk Agadir', 'latitude' => 30.41, 'longitude' => -9.58],
+            ],
+        ]);
+        $step1Res->assertOk();
+
+        // 3. Patch Step 2: package
+        $step2Res = $this->actingAs($this->client)->patchJson("/api/v1/requests/{$requestId}", [
+            'step' => 'package',
+            'package_description' => '2 cartons d electronique',
+            'package_weight_kg' => 12.5,
+        ]);
+        $step2Res->assertOk();
+
+        // 4. Batch presigned URLs & photo confirm
+        $presignedRes = $this->actingAs($this->client)->postJson("/api/v1/requests/{$requestId}/photos/presigned-urls", [
+            'files' => [
+                ['filename' => 'photo1.jpg', 'content_type' => 'image/jpeg', 'file_size' => 1024],
+            ],
+        ]);
+        $presignedRes->assertOk()->assertJsonCount(1);
+        $photoKey = $presignedRes->json('0.photo_key');
+
+        $confirmRes = $this->actingAs($this->client)->postJson("/api/v1/requests/{$requestId}/photos/confirm", [
+            'photo_key' => $photoKey,
+        ]);
+        $confirmRes->assertStatus(201);
+
+        // 5. Patch Step 3: vehicle
+        $step3Res = $this->actingAs($this->client)->patchJson("/api/v1/requests/{$requestId}", [
+            'step' => 'vehicle',
+            'vehicle_type' => 'triporteur',
+        ]);
+        $step3Res->assertOk();
+
+        // 6. Patch Step 4: pricing (< 20 MAD fails)
+        $step4Fail = $this->actingAs($this->client)->patchJson("/api/v1/requests/{$requestId}", [
+            'step' => 'pricing',
+            'proposed_price' => 15.00,
+        ]);
+        $step4Fail->assertStatus(422);
+
+        $step4Ok = $this->actingAs($this->client)->patchJson("/api/v1/requests/{$requestId}", [
+            'step' => 'pricing',
+            'proposed_price' => 50.00,
+        ]);
+        $step4Ok->assertOk();
+
+        // 7. Step 5: Publish
+        $publishRes = $this->actingAs($this->client)->postJson("/api/v1/requests/{$requestId}/publish");
+        $publishRes->assertOk()->assertJsonPath('request.status', 'OPEN');
+    }
 }

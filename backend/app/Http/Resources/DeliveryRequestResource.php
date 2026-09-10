@@ -16,6 +16,7 @@ class DeliveryRequestResource extends JsonResource
             'description' => $this->description,
             'package_weight' => $this->package_weight,
             'package_dimensions' => $this->package_dimensions,
+            'vehicle_type' => $this->vehicle_type,
             'proposed_price' => $this->proposed_price,
             'budget_min' => $this->budget_min,
             'budget_max' => $this->budget_max,
@@ -26,6 +27,7 @@ class DeliveryRequestResource extends JsonResource
             'expires_at' => $this->expires_at?->toIso8601String(),
             'offers_count' => $this->whenCounted('offers'),
             'stops' => RequestStopResource::collection($this->whenLoaded('stops')),
+            'photos' => RequestPhotoResource::collection($this->whenLoaded('photos')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

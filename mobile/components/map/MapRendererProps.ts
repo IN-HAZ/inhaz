@@ -37,6 +37,8 @@ export interface MapRendererProps {
   markers?: RouteMarker[];
   polyline?: MapPoint[];
   showRecenterButton?: boolean;
+  /** Pixels the bottom sheet covers — maps controls and centering adjust above this */
+  bottomPadding?: number;
   onMapPress?: (point: MapPoint) => void;
   onRegionChange?: (region: Region) => void;
   onRecenter?: (point: MapPoint) => void;

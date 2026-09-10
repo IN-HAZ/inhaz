@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'description',
     'package_weight',
     'package_dimensions',
+    'vehicle_type',
     'proposed_price',
     'budget_min',
     'budget_max',

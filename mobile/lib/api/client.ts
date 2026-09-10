@@ -60,6 +60,12 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.error("[API Response Error]", {
+      url: error.config?.url,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
     if (error.response?.status === 401) {
       setAuthToken(null);
       await tokenStorage.removeToken();

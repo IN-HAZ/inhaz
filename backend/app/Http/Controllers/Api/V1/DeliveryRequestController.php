@@ -74,6 +74,30 @@ class DeliveryRequestController extends Controller
         }
     }
 
+    public function patchStep(Request $request, DeliveryRequest $deliveryRequest): JsonResponse
+    {
+        $this->authorize('update', $deliveryRequest);
+
+        $request->validate([
+            'step' => ['required', 'string', 'in:locations,package,vehicle,pricing'],
+        ]);
+
+        try {
+            $deliveryRequest = $this->deliveryRequestService->patchStep(
+                $deliveryRequest,
+                $request->input('step'),
+                $request->all()
+            );
+
+            return response()->json([
+                'message' => 'Étape enregistrée',
+                'request' => new DeliveryRequestResource($deliveryRequest),
+            ]);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
     public function destroy(Request $request, DeliveryRequest $deliveryRequest): JsonResponse
     {
         $this->authorize('delete', $deliveryRequest);
