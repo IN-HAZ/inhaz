@@ -1,20 +1,2 @@
-.git
-.env
-.env.*
-!.env.example
-node_modules
-vendor
-storage/logs/*
-storage/framework/cache/*
-storage/framework/sessions/*
-storage/framework/views/*
-storage/framework/testing/*
-storage/app/*
-backend/storage/framework/testing/*
-backend/storage/app/*
-tests
-*.md
-.vscode
-.idea
-.expo
-
+# This file is intentionally minimal.
+# The root .dockerignore handles all exclusions (build context is repo root).
