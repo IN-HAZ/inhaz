@@ -1,42 +1,48 @@
-COMPOSE_DEV := docker compose -f infra/docker-compose.dev.yml
-COMPOSE_PROD := docker compose -f infra/docker-compose.prod.yml
+COMPOSE := docker compose -f infra/docker-compose.dev.yml
 
-.PHONY: dev env up down logs build prod-up prod-build prod-down
+.PHONY: env set-ip up dev andr down down-v logs build
 
-## Ensure root .env and backend/.env exist
+## Bootstrap .env files from examples (first-time setup)
 env:
-	@if [ ! -f .env ]; then \
-		echo "Creating root .env from .env.example..."; \
-		cp .env.example .env; \
-	fi
-	@if [ ! -f backend/.env ] || [ ! -s backend/.env ]; then \
-		echo "Creating backend/.env from root .env..."; \
-		cp .env backend/.env; \
-	fi
+	@[ -f backend/.env ]  || cp backend/.env.example  backend/.env
+	@[ -f mobile/.env ]   || cp mobile/.env.example   mobile/.env
+	@[ -f infra/.env ]    || cp infra/.env.example     infra/.env
 
+## Update EXPO_PUBLIC_API_URL with local machine IP
+set-ip: env
+	$(eval IP := $(shell ip route get 1.1.1.1 | awk '{print $$7; exit}'))
+	@sed -i "s|^EXPO_PUBLIC_API_URL=.*|EXPO_PUBLIC_API_URL=http://$(IP):8000/api/v1|" mobile/.env
 
-## Start dev stack (Docker background services + Expo mobile app foreground)
-dev: env up
-	@export $$(grep -v '^#' .env | xargs) && cd mobile && npm run start
-
+## Start backend containers
 up: env
-	$(COMPOSE_DEV) up -d --build
+	$(COMPOSE) up -d --build
 
+## Start full dev stack: containers + Expo
+dev: set-ip up
+	cd mobile && npm run start
+
+## Run android on device
+andr: set-ip up
+	cd mobile && npx expo run:android --device
+
+## Stop containers
 down:
-	$(COMPOSE_DEV) down
+	$(COMPOSE) down
 
+## Stop containers and wipe volumes
 down-v:
-	$(COMPOSE_DEV) down -v
+	$(COMPOSE) down -v
 
+## Stream container logs
 logs:
-	$(COMPOSE_DEV) logs -f
+	$(COMPOSE) logs -f
 
+## Rebuild images
 build:
-	$(COMPOSE_DEV) build
+	$(COMPOSE) build
 
-## Production (requires root .env configuration)
-prod-up: env
-	$(COMPOSE_PROD) --env-file .env up -d --build
-
-prod-down:
-	$(COMPOSE_PROD) --env-file .env down
+## Run artisan inside the php container
+art:
+	$(COMPOSE) exec php php artisan $(filter-out $@,$(MAKECMDGOALS))
+%:
+	@:
