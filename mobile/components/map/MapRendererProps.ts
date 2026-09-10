@@ -1,47 +1,16 @@
-import type { ReactNode } from 'react';
+/**
+ * MapRendererProps.ts — backward-compatibility re-export shim.
+ *
+ * All types now live in `core/BaseMapTypes.ts`.
+ * Existing imports (`from '@/components/map/MapRenderer'`) continue to work.
+ */
+export type {
+    MapPoint,
+    Region,
+    NearbyDriverMarker,
+    RouteMarker,
+    BaseMapHandle as MapRendererHandle,
+    MapStyleTheme,
+} from "./core/BaseMapTypes";
 
-export interface MapPoint {
-  latitude: number;
-  longitude: number;
-}
-
-export interface Region {
-  latitude: number;
-  longitude: number;
-  latitudeDelta: number;
-  longitudeDelta: number;
-}
-
-export interface NearbyDriverMarker {
-  id: string;
-  latitude: number;
-  longitude: number;
-  vehicleType?: string;
-  vehicleModel?: string;
-  rating?: number;
-  distanceKm?: number;
-}
-
-export interface RouteMarker {
-  id: string;
-  point: MapPoint;
-  title?: string;
-  description?: string;
-  pinColor?: string;
-}
-
-export interface MapRendererProps {
-  region?: Region | null;
-  currentLocation?: MapPoint | null;
-  drivers?: NearbyDriverMarker[];
-  markers?: RouteMarker[];
-  polyline?: MapPoint[];
-  showRecenterButton?: boolean;
-  /** Pixels the bottom sheet covers — maps controls and centering adjust above this */
-  bottomPadding?: number;
-  onMapPress?: (point: MapPoint) => void;
-  onRegionChange?: (region: Region) => void;
-  onRecenter?: (point: MapPoint) => void;
-  /** Extra markers (native only; ignored on web). */
-  children?: ReactNode;
-}
+export type { RequestMapProps as MapRendererProps } from "./variants/RequestMap";
