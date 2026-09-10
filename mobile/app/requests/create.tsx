@@ -18,7 +18,8 @@ import { ArrowLeft, Truck, Bike } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 
-import { MapRenderer, MapRendererHandle, RouteMarker, MapPoint, Region } from '@/components/map/MapRenderer';
+import { RequestMap } from '@/components/map/variants/RequestMap';
+import type { BaseMapHandle as MapRendererHandle, RouteMarker, MapPoint, Region } from '@/components/map/core/BaseMapTypes';
 import { requestsApi } from '@/lib/api/requests';
 import { getPlaceDetails, reverseGeocode, PlaceSearchResult } from '@/lib/api/geocoding';
 import { getErrorMessage } from '@/lib/api/errors';
@@ -464,7 +465,7 @@ export default function CreateRequestScreen() {
 
       {/* ── Full-screen map ──────────────────────────────────────────────────── */}
       <View style={StyleSheet.absoluteFill}>
-        <MapRenderer
+        <RequestMap
           ref={mapRef}
           region={flyRegion}
           currentLocation={currentLocation}

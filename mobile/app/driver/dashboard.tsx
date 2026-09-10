@@ -26,7 +26,8 @@ import { useAuthStore } from "@/lib/store/auth";
 import { useDriverDashboard } from "@/lib/hooks/useDriverDashboard";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getErrorMessage } from "@/lib/api/errors";
-import { MapRenderer, Region, MapPoint } from "@/components/map/MapRenderer";
+import { DashboardMap } from "@/components/map/variants/DashboardMap";
+import type { Region, MapPoint } from "@/components/map/core/BaseMapTypes";
 import { requestAllAppPermissions } from "@/lib/permissions";
 
 const PURPLE = "#4B2861";
@@ -303,7 +304,7 @@ export default function DriverDashboardScreen() {
                         </TouchableOpacity>
                     </View>
                     <View className="h-52 rounded-2xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
-                        <MapRenderer
+                        <DashboardMap
                             region={region}
                             currentLocation={location}
                         />
