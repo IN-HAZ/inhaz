@@ -121,39 +121,49 @@
 
 ### 2.1 Fonts
 
--   [ ] The app loads 9 Inter weights today; only 6 are used: regular
+-   [x] The app loads 9 Inter weights today; only 6 are used: regular
     (400), medium (500), semibold (600), bold (700), extrabold (800),
     black (900). Thin/extralight/light are unused (verified).
--   [ ] Keep only those 6 weights in `useFonts()`; remove thin,
+-   [x] Keep only those 6 weights in `useFonts()`; remove thin,
     extralight, light.
--   [ ] Remove the `fontFamily` keys for the removed weights from
+-   [x] Remove the `fontFamily` keys for the removed weights from
     `tailwind.config.js` so they cannot reappear.
 -   [ ] Verify fallback behavior if a weight is removed.
 -   [ ] Measure startup before/after the font reduction.
 
 ### 2.2 Root layout
 
--   [ ] Keep the root layout as lightweight as possible.
--   [ ] Avoid doing feature-specific initialization in
+-   [x] Keep the root layout as lightweight as possible.
+-   [x] Avoid doing feature-specific initialization in
     `app/_layout.tsx`.
--   [ ] Keep `QueryClientProvider` and global providers here.
--   [ ] Keep auth restoration here.
--   [ ] Remove the boot-time location permission request
+-   [x] Keep `QueryClientProvider` and global providers here.
+-   [x] Keep auth restoration here.
+-   [x] Remove the boot-time location permission request
     (`useAppPermissions`) from the root layout — location permission
     moves to the client/driver home screens (§7/§9).
--   [ ] Do not request camera permission during app startup (feature-time
+-   [x] Do not request camera permission during app startup (feature-time
     only, see §3).
 
 ### 2.3 Auth restoration
 
--   [ ] Keep `checkAuth()` as the session restoration mechanism.
--   [ ] Add an explicit auth loading state to prevent premature
+-   [x] Keep `checkAuth()` as the session restoration mechanism.
+-   [x] Add an explicit auth loading state to prevent premature
     redirects.
--   [ ] Make routing wait until auth restoration finishes.
--   [ ] Avoid redirect loops caused by the Axios 401 handler + router
+-   [x] Make routing wait until auth restoration finishes.
+-   [x] Avoid redirect loops caused by the Axios 401 handler + router
     guard: wire `onUnauthenticated()` from `lib/api/client.ts` into the
     store/root layout so a mid-session 401 clears the session and routes
     to `/auth/login`.
+
+> W2 2026-09-21: boot sequence delivered. `app/_layout.tsx` loads only the
+> 6 used Inter weights; `tailwind.config.js` `fontFamily` keys for the
+> removed weights deleted; boot-time `useAppPermissions()` removed (location
+> stays feature-time in `driver/dashboard.tsx` + wizard until W8/W9 move it
+> to the home maps; camera never at boot). Explicit auth-restoration guard
+> uses the store `isLoading`; 401 → `onUnauthenticated()` → store
+> `resetAuth()` → guard routes to `/auth/login`. `npx tsc --noEmit` passes.
+> Device-dependent items left open below: cold-start measurement
+> before/after and font-fallback verification (§2.1 last two items).
 
 ------------------------------------------------------------------------
 

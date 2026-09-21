@@ -2,9 +2,6 @@ import "../global.css";
 
 import { useFonts } from "expo-font";
 import {
-    Inter_100Thin,
-    Inter_200ExtraLight,
-    Inter_300Light,
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -19,7 +16,6 @@ import "react-native-reanimated";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "../components/ui/ToastProvider";
 import { useAuthStore } from "../lib/store/auth";
-import { useAppPermissions } from "../lib/permissions";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -33,9 +29,6 @@ const queryClient = new QueryClient();
 
 export default function RootLayout() {
     const [loaded, error] = useFonts({
-        Inter_100Thin,
-        Inter_200ExtraLight,
-        Inter_300Light,
         Inter_400Regular,
         Inter_500Medium,
         Inter_600SemiBold,
@@ -62,8 +55,8 @@ export default function RootLayout() {
         checkAuth();
     }, []);
 
-    // Initialize and request all app boot permissions in one centralized call
-    useAppPermissions(loaded && !isLoading);
+    // No boot-time permission requests here: location is requested when the
+    // client/driver home maps mount (W8/W9), camera is feature-time only (W3).
 
     useEffect(() => {
         if (isLoading || !loaded) return;
@@ -78,6 +71,9 @@ export default function RootLayout() {
     }, [isAuthenticated, isLoading, loaded, segments]);
 
     if (!loaded || isLoading) {
+        // Auth-restoration guard: never render the router gate until font load
+        // AND auth restoration (store `isLoading` from `checkAuth`) have
+        // finished, so we don't flash /auth/login or redirect prematurely.
         return null;
     }
 

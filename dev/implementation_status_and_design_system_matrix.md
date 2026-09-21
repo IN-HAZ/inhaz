@@ -14,7 +14,8 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 | WS | Scope | Status |
 | :--- | :--- | :--- |
 | **W1** | Semantic Tailwind class system in `mobile/global.css` (`@layer components`: btn-primary/secondary/outline/danger, input-default, card-default/outlined/flat, screen-container, section-title, section-header, nav-header, text-muted, list-card, label-uppercase, badge-{neutral,success,warning,error,info}); `components/ui/*` (Button, Input, Card, Badge, Toast) consume them; all inline `StyleSheet`/`style={{` swept from `app/` + `components/` (whitelisted: runtime map geometry, onboarding progress width, wizard animated sheet position, Toast opacity); STATUS_CONFIG hex maps → Tailwind class maps; Expo template leftovers removed (modal.tsx, EditScreenInfo, ExternalLink, StyledText, Themed, useColorScheme, useClientOnlyValue, `constants/Colors.ts`); `+not-found.tsx` rewritten plain RN. | 🟢 done — **awaiting review** |
-| W2–W11 | See `mobile/plan.md`. | ⏳ pending |
+| **W2** | Boot sequence & fonts: `app/_layout.tsx` loads only the 6 used Inter weights (regular..black) — thin/extralight/light dropped from `useFonts()` and from `tailwind.config.js` `fontFamily` keys; boot-time `useAppPermissions()` removed from the root layout (location moves to client/driver home maps W8/W9, camera stays feature-time); explicit auth-restoration guard (store `isLoading`) documented; 401 → `onUnauthenticated()` → store `resetAuth()` → guard routes to `/auth/login` (verified chain). `npx tsc --noEmit` passes. | 🟢 done — **awaiting review** (cold-start measurement + font-fallback need a device) |
+| W3–W11 | See `mobile/plan.md`. | ⏳ pending |
 
 ---
 
@@ -68,6 +69,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
   * Mobile Store & Security: [mobile/lib/store/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/store/auth.ts), [mobile/lib/storage/secureStore.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/storage/secureStore.ts), [mobile/lib/api/client.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/client.ts), [mobile/lib/validation/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/validation/auth.ts)
 * **Details & Status:** Fully implemented on backend and mobile. Upgraded with hardware enclave secure store token persistence (`expo-secure-store`), 401 response interceptor event listeners for automated session teardown, and Zod client-side validation for Moroccan phone numbers and 6-digit OTP codes.
 * **Phase A W1:** Login/OTP screens, secure-store auth store swept to semantic Tailwind classes (`mobile/global.css`). No feature change.
+* **Phase A W2:** Root layout boot trimmed — only the 6 used Inter weights loaded, boot-time location permission removed (feature-time: home maps in W8/W9), auth-restoration guard documented; routing payload unchanged. No feature change.
 * **Problems / Notes:** Production SMS Gateway driver (e.g., Twilio / Infobip) needs API key config in `.env`; local environment logs OTPs to Mailpit/database.
 
 #### US-102: Sanctum Token & Session Management
@@ -80,6 +82,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
   * Mobile Store: [mobile/lib/store/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/store/auth.ts)
 * **Details & Status:** Full token lifecycle handling. Mobile Axios client injects `Authorization: Bearer <token>` header, handles 401 unauthenticated errors, and persists token securely using SecureStore.
 * **Phase A W1:** Cosmetic reformat (whitespace only) of `mobile/lib/store/auth.ts` folded into the W1 commit.
+* **Phase A W2:** 401 mid-session chain verified for the redirect-loop fix: `lib/api/client.ts` 401 interceptor → `onUnauthenticated()` → store `resetAuth()` → root-layout guard routes to `/auth/login`. No feature change.
 * **Problems / Notes:** None.
 
 #### US-103: Dual-Role Switching (Client / Driver)
