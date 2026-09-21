@@ -1,9 +1,20 @@
 # inHAZ — User Stories & Implementation Status Matrix
 
 **Repository:** `inHAZ` (P2P Urban Freight Platform — Morocco)  
-**Last Updated:** 2026-09-02 18:10:00  
+**Last Updated:** 2026-09-21  
 **Total Epics:** 10  
 **Total User Stories:** 39  
+
+---
+
+## 📋 Phase A Refactor Log — Mobile (branch `refactor_phase_a`)
+
+Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API changes; backend untouched. Running log:
+
+| WS | Scope | Status |
+| :--- | :--- | :--- |
+| **W1** | Semantic Tailwind class system in `mobile/global.css` (`@layer components`: btn-primary/secondary/outline/danger, input-default, card-default/outlined/flat, screen-container, section-title, section-header, nav-header, text-muted, list-card, label-uppercase, badge-{neutral,success,warning,error,info}); `components/ui/*` (Button, Input, Card, Badge, Toast) consume them; all inline `StyleSheet`/`style={{` swept from `app/` + `components/` (whitelisted: runtime map geometry, onboarding progress width, wizard animated sheet position, Toast opacity); STATUS_CONFIG hex maps → Tailwind class maps; Expo template leftovers removed (modal.tsx, EditScreenInfo, ExternalLink, StyledText, Themed, useColorScheme, useClientOnlyValue, `constants/Colors.ts`); `+not-found.tsx` rewritten plain RN. | 🟢 done — **awaiting review** |
+| W2–W11 | See `mobile/plan.md`. | ⏳ pending |
 
 ---
 
@@ -56,6 +67,7 @@
   * Mobile Screens: [mobile/app/auth/login.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/auth/login.tsx), [mobile/app/auth/otp.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/auth/otp.tsx)
   * Mobile Store & Security: [mobile/lib/store/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/store/auth.ts), [mobile/lib/storage/secureStore.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/storage/secureStore.ts), [mobile/lib/api/client.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/client.ts), [mobile/lib/validation/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/validation/auth.ts)
 * **Details & Status:** Fully implemented on backend and mobile. Upgraded with hardware enclave secure store token persistence (`expo-secure-store`), 401 response interceptor event listeners for automated session teardown, and Zod client-side validation for Moroccan phone numbers and 6-digit OTP codes.
+* **Phase A W1:** Login/OTP screens, secure-store auth store swept to semantic Tailwind classes (`mobile/global.css`). No feature change.
 * **Problems / Notes:** Production SMS Gateway driver (e.g., Twilio / Infobip) needs API key config in `.env`; local environment logs OTPs to Mailpit/database.
 
 #### US-102: Sanctum Token & Session Management
@@ -67,6 +79,7 @@
   * Mobile API Client: [mobile/lib/api/client.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/client.ts)
   * Mobile Store: [mobile/lib/store/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/store/auth.ts)
 * **Details & Status:** Full token lifecycle handling. Mobile Axios client injects `Authorization: Bearer <token>` header, handles 401 unauthenticated errors, and persists token securely using SecureStore.
+* **Phase A W1:** Cosmetic reformat (whitespace only) of `mobile/lib/store/auth.ts` folded into the W1 commit.
 * **Problems / Notes:** None.
 
 #### US-103: Dual-Role Switching (Client / Driver)
@@ -91,6 +104,7 @@
   * Backend Test: [backend/tests/Feature/Auth/UserProfileTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/Auth/UserProfileTest.php)
   * Mobile Profile Screen: [mobile/app/(tabs)/profile.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/(tabs)/profile.tsx)
 * **Details & Status:** Backend profile retrieval (`GET /me`) and update (`PUT /me`) endpoints are fully functional. Mobile app includes profile viewing and inline name/email editing on `mobile/app/(tabs)/profile.tsx`.
+* **Phase A W1:** Profile screen header shadow + brand colors converted to Tailwind classes (`shadow-lg shadow-primary-800/15`, `bg-primary-800`). No feature change.
 * **Problems / Notes:** Dedicated profile picture / avatar photo picker upload (`POST /api/v1/profile/avatar`) is pending implementation.
 
 #### US-105: Profile Configuration Screen
@@ -111,6 +125,7 @@
   * Mobile Client Requests Screen: [mobile/app/requests/index.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/index.tsx)
   * Mobile Driver Trips Screen: [mobile/app/trips/index.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/trips/index.tsx)
 * **Details & Status:** Both client requests history and driver trip history list screens are implemented with pull-to-refresh, status tab filters (active vs history), and route navigation.
+* **Phase A W1:** Requests & trips history screens swept to semantic classes; STATUS_CONFIG hex maps → Tailwind badge/text class maps. No feature change.
 * **Problems / Notes:** None.
 
 ---
@@ -128,6 +143,7 @@
   * Backend Test: [backend/tests/Feature/Driver/DriverOnboardingTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/Driver/DriverOnboardingTest.php)
   * Mobile Screens: [mobile/app/driver/onboarding.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/onboarding.tsx), [mobile/app/driver/documents/upload.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/documents/upload.tsx), [mobile/app/driver/vehicle.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/vehicle.tsx)
 * **Details & Status:** Document upload API with validation (PDF, JPEG, PNG, max 10MB), secure streaming endpoint (`GET /api/v1/driver/documents/{id}/view`), vehicle creation, and step-by-step mobile UI flow.
+* **Phase A W1:** Onboarding + documents list screens swept to semantic classes (wizard progress width kept inline — Tailwind can't express dynamic %). No feature change.
 * **Problems / Notes:** None.
 
 #### US-202: Driver Pending Validation Screen
@@ -138,6 +154,7 @@
   * Backend Enum: [backend/app/Enums/DriverProfileStatus.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Enums/DriverProfileStatus.php)
   * Mobile Screen: [mobile/app/driver/onboarding.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/onboarding.tsx)
 * **Details & Status:** Mobile onboarding screen checks driver status (`PENDING`, `APPROVED`, `REJECTED`), displays warning banner, and blocks marketplace access until approved.
+* **Phase A W1:** Status banner on onboarding screen swept to semantic badge/classes. No feature change.
 * **Problems / Notes:** None.
 
 #### US-203: Admin Document Inspection & Approval (Filament)
@@ -164,6 +181,7 @@
   * Mobile Screen: [mobile/app/driver/dashboard.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/dashboard.tsx)
   * Mobile API Client: [mobile/lib/api/driver.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/driver.ts)
 * **Details & Status:** Fully implemented on backend and mobile. Features online/offline switch toggle (with green `#00C853` indicator), configurable commission debt threshold validation (200.00 MAD), daily earnings computation, active trip shortcut card, interactive cross-platform `MapRenderer`, and feature test coverage.
+* **Phase A W1:** Dashboard swept to semantic classes (CTA → `bg-primary-800`, per-card elevation → Tailwind shadows). No feature change.
 * **Problems / Notes:** None.
 
 #### US-205: Driver Profile Screen
@@ -193,6 +211,7 @@
   * Backend Test: [backend/tests/Feature/DeliveryRequestApiTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/DeliveryRequestApiTest.php)
   * Mobile Screen & API: [mobile/app/requests/create.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/create.tsx), [mobile/lib/api/requests.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/requests.ts)
 * **Details & Status:** Fully implemented on backend and mobile. Features draft creation (`POST /api/v1/requests`), step-by-step state saving (`PATCH /api/v1/requests/{id}`), S3 batch presigned upload URLs (`POST /api/v1/requests/{id}/photos/presigned-urls`), photo confirmation (`POST /api/v1/requests/{id}/photos/confirm`), split-screen Google Map trajectory polyline, vehicle cards (Moto, Triporteur, Fourgonnette, Camion), proposed price controls with 20 MAD minimum floor banner, and publish action (`POST /api/v1/requests/{id}/publish`).
+* **Phase A W1:** Largest conversion — `mobile/app/requests/create.tsx` full StyleSheet → classes (animated sheet keepalive to Tailwind + inline animated `top`/`bottom` whitelisted); map component split-screen geometry converted. No feature change.
 * **Problems / Notes:** None.
 
 #### US-302: Google Maps / Places Autocomplete & Geocoding
@@ -202,6 +221,7 @@
   * Spec: [dev/epic-03-request-creation-and-geospatial/us-302-google-maps-places-autocomplete-and-geocoding/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-03-request-creation-and-geospatial/us-302-google-maps-places-autocomplete-and-geocoding/README.md)
   * Mobile Form: [mobile/app/requests/create.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/create.tsx)
 * **Details & Status:** Mobile form captures latitude, longitude, and formatted text addresses for stops.
+* **Phase A W1:** Wizard address steps swept to semantic classes (`Step1Locations.tsx`, `create.tsx`). No feature change.
 * **Problems / Notes:** Live Google Places Autocomplete dropdown and interactive map pin placement component require Google Maps JavaScript/Native API Key integration.
 
 #### US-303: Recommended Price Calculator
@@ -238,6 +258,7 @@
   * Backend Test: [backend/tests/Feature/OfferApiTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/OfferApiTest.php)
   * Mobile Screens: [mobile/app/driver/marketplace/index.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/marketplace/index.tsx), [mobile/app/driver/marketplace/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/marketplace/[id].tsx)
 * **Details & Status:** Complete bidding API and mobile UI. Drivers can submit custom amounts or quick bid buttons (+10%, +20% of target price).
+* **Phase A W1:** Marketplace feed + detail screens swept to semantic classes; STATUS maps → class maps on request detail. No feature change.
 * **Problems / Notes:** None.
 
 #### US-402: Client Realtime Offer Stream & Acceptance / Locking
@@ -250,6 +271,7 @@
   * Backend Test: [backend/tests/Feature/OfferE2ETest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/OfferE2ETest.php)
   * Mobile Screens: [mobile/app/requests/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/[id].tsx), [mobile/app/requests/offers/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/offers/[id].tsx)
 * **Details & Status:** Full offer list rendering with driver ratings and bid amounts. Acceptance action atomically transitions request status, generates `Trip`, and rejects competitor bids.
+* **Phase A W1:** Request detail + offers screens swept to semantic classes; STATUS maps → class maps. No feature change.
 * **Problems / Notes:** Real-time updates rely on polling refetch rather than WebSockets/Pusher.
 
 #### US-403: Counter-Offer Negotiation Flow
@@ -260,6 +282,7 @@
   * Backend Controller: [backend/app/Http/Controllers/Api/V1/OfferController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/OfferController.php) (`counter` action)
   * Mobile Screen: [mobile/app/requests/offers/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/offers/[id].tsx)
 * **Details & Status:** Basic driver offer submission and client decision actions are implemented.
+* **Phase A W1:** Offers screen swept to semantic classes. No feature change.
 * **Problems / Notes:** Multi-turn client counter-proposal input controls (client offering intermediate price back to driver) need UI enhancement.
 
 ---
@@ -278,6 +301,7 @@
   * Backend Tests: [backend/tests/Feature/TripApiTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/TripApiTest.php), [backend/tests/Feature/TripE2ETest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/TripE2ETest.php)
   * Mobile Screen: [mobile/app/trips/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/trips/[id].tsx)
 * **Details & Status:** Robust state machine with transition validation rules, status timestamp records, and step-wise mobile UI stepper for driver and client.
+* **Phase A W1:** Trip detail screen swept to semantic classes; STATUS maps → class maps (rating stars → `bg-yellow-400`/`bg-gray-100`). No feature change.
 * **Problems / Notes:** None.
 
 #### US-502: Realtime Driver GPS Tracking / Map
@@ -287,6 +311,7 @@
   * Spec: [dev/epic-05-trip-execution-tracking-and-chat/us-502-realtime-driver-gps-tracking-map/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-05-trip-execution-tracking-and-chat/us-502-realtime-driver-gps-tracking-map/README.md)
   * Mobile Screen: [mobile/app/trips/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/trips/[id].tsx)
 * **Details & Status:** Trip details screen renders static route map container with pickup and dropoff markers.
+* **Phase A W1:** All map components (`BaseMap`, variants, layers, RecenterButton) swept to `flex-1`/classes; runtime geometry (height, position, transform) kept inline on the whitelisted carve-out. No feature change.
 * **Problems / Notes:** Live background driver GPS location broadcasting via WebSockets/Reverb/Pusher and moving driver marker animation are pending integration.
 
 #### US-503: In-App Trip Chat & Media
@@ -312,6 +337,7 @@
   * Backend Model: [backend/app/Models/Trip.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/Trip.php)
   * Mobile Screen: [mobile/app/trips/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/trips/[id].tsx)
 * **Details & Status:** Driver confirms cash collection during final milestone transition. Fare breakdown digital receipt rendered on screen.
+* **Phase A W1:** Trip detail screen swept to semantic classes. No feature change.
 * **Problems / Notes:** None.
 
 #### US-602: Platform Commission Ledger & Driver Balance
@@ -334,6 +360,7 @@
   * Backend Test: [backend/tests/Feature/TripApiTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/TripApiTest.php)
   * Mobile Screen: [mobile/app/trips/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/trips/[id].tsx)
 * **Details & Status:** Backend endpoint (`POST /api/v1/trips/{id}/rate`) validates score (1-5), ensures reviewer participated in trip, and prevents duplicate ratings. Integrated into mobile trip screen.
+* **Phase A W1:** Trip detail rating UI swept to semantic classes. No feature change.
 * **Problems / Notes:** None.
 
 #### US-604: Payment Method Selection
@@ -343,6 +370,7 @@
   * Spec: [dev/epic-06-payments-commission-and-ratings/us-604-payment-method-selection/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-06-payments-commission-and-ratings/us-604-payment-method-selection/README.md)
   * Mobile Form: [mobile/app/requests/create.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/requests/create.tsx)
 * **Details & Status:** Cash on Delivery (COD) selected by default during delivery request creation.
+* **Phase A W1:** Payment method selection UI in `create.tsx` swept to semantic classes. No feature change.
 * **Problems / Notes:** Online card payments (CMI integration) are planned for post-MVP phase.
 
 ---

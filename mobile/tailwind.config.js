@@ -29,6 +29,9 @@ module.exports = {
           500: '#22c55e',
           600: '#16a34a',
         },
+        inhaz: {
+          purple: '#7928CA',
+        },
       },
       fontFamily: {
         sans: ['Inter_400Regular', 'Inter_500Medium', 'Inter_600SemiBold', 'Inter_700Bold'],

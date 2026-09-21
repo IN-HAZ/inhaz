@@ -18,7 +18,7 @@ export interface DashboardMapProps {
  */
 export function DashboardMap({ currentLocation, region }: DashboardMapProps) {
     return (
-        <View style={{ flex: 1 }}>
+        <View className="flex-1">
             <BaseMap
                 region={region}
                 mapStyle="minimal"

@@ -5,7 +5,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -169,7 +168,7 @@ export default function ProfileTabScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F2F7]">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
         {/* ===== Header ===== */}
         <View className="items-center pt-8 pb-5 bg-white border-b border-[#EFEFF0]">
           <TouchableOpacity
@@ -180,7 +179,7 @@ export default function ProfileTabScreen() {
             <Pencil size={15} color={PURPLE} />
           </TouchableOpacity>
 
-          <View className="w-[88px] h-[88px] rounded-full bg-primary-100 items-center justify-center border-4 border-white" style={headerShadow}>
+          <View className="w-[88px] h-[88px] rounded-full bg-primary-100 items-center justify-center border-4 border-white shadow-lg shadow-primary-800/15">
             <Text className="text-primary-800 text-3xl font-extrabold">{initial}</Text>
           </View>
           <View className="flex-row items-center mt-3.5">
@@ -244,8 +243,7 @@ export default function ProfileTabScreen() {
                   onPress={handleSave}
                   disabled={saving}
                   activeOpacity={0.85}
-                  style={{ backgroundColor: PURPLE }}
-                  className="flex-1 rounded-lg py-3.5 items-center"
+                  className="flex-1 rounded-lg py-3.5 items-center bg-primary-800"
                 >
                   <Text className="text-white font-semibold text-sm">
                     {saving ? 'Enregistrement...' : 'Enregistrer'}
@@ -364,11 +362,3 @@ export default function ProfileTabScreen() {
     </SafeAreaView>
   );
 }
-
-const headerShadow = {
-  shadowColor: '#4B2861',
-  shadowOpacity: 0.15,
-  shadowRadius: 10,
-  shadowOffset: { width: 0, height: 4 },
-  elevation: 3,
-};

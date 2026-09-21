@@ -6,12 +6,12 @@ import { DeliveryRequestItem } from '@/lib/api/requests';
 import { useDeliveryRequests } from '@/lib/hooks/useDeliveryRequests';
 import { getErrorMessage } from '@/lib/api/errors';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Clock }> = {
-  DRAFT: { label: 'Brouillon', color: '#6B7280', bg: '#F3F4F6', icon: Clock },
-  OPEN: { label: 'En attente', color: '#D97706', bg: '#FEF3C7', icon: Clock },
-  MATCHED: { label: 'En cours', color: '#2563EB', bg: '#DBEAFE', icon: CheckCircle },
-  CANCELLED: { label: 'Annulée', color: '#DC2626', bg: '#FEE2E2', icon: XCircle },
-  EXPIRED: { label: 'Expirée', color: '#6B7280', bg: '#F3F4F6', icon: Clock },
+const STATUS_CONFIG: Record<string, { label: string; badge: string; text: string; icon: typeof Clock; iconColor: string }> = {
+  DRAFT: { label: 'Brouillon', badge: 'bg-gray-100', text: 'text-gray-500', icon: Clock, iconColor: '#6B7280' },
+  OPEN: { label: 'En attente', badge: 'bg-amber-100', text: 'text-amber-600', icon: Clock, iconColor: '#D97706' },
+  MATCHED: { label: 'En cours', badge: 'bg-blue-100', text: 'text-blue-600', icon: CheckCircle, iconColor: '#2563EB' },
+  CANCELLED: { label: 'Annulée', badge: 'bg-red-100', text: 'text-red-600', icon: XCircle, iconColor: '#DC2626' },
+  EXPIRED: { label: 'Expirée', badge: 'bg-gray-100', text: 'text-gray-500', icon: Clock, iconColor: '#6B7280' },
 };
 
 export default function RequestsScreen() {
@@ -29,15 +29,14 @@ export default function RequestsScreen() {
     return (
       <TouchableOpacity
         onPress={() => router.push(`/requests/${item.id}`)}
-        className="bg-white mx-6 mb-3 p-4 rounded-2xl border border-gray-100"
-        style={{ elevation: 1 }}
+        className="bg-white mx-6 mb-3 p-4 rounded-2xl border border-gray-100 shadow-sm"
       >
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center gap-2">
-            <View className="w-8 h-8 rounded-xl items-center justify-center" style={{ backgroundColor: status.bg }}>
-              <StatusIcon size={16} color={status.color} />
+            <View className={`w-8 h-8 rounded-xl items-center justify-center ${status.badge}`}>
+              <StatusIcon size={16} color={status.iconColor} />
             </View>
-            <Text className="text-xs font-semibold" style={{ color: status.color }}>
+            <Text className={`text-xs font-semibold ${status.text}`}>
               {status.label}
             </Text>
           </View>
@@ -128,7 +127,7 @@ export default function RequestsScreen() {
           data={requests}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingVertical: 16 }}
+          contentContainerClassName="py-4"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#4B2861" />}
           onEndReached={() => {
             if (pagination && page < pagination.last_page) {

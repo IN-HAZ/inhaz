@@ -24,7 +24,7 @@ function getVehicleEmoji(vehicleType?: string): string {
  *
  * The marker smoothly re-positions between GPS pings via the `driverLocation`
  * prop — each prop change triggers a smooth camera-less animation on the marker
- * itself. Heading drives a CSS-style rotation via the `Animated` API.
+ * itself. Heading drives a rotation via the `Animated` API.
  *
  * Designed to be placed directly inside a BaseMap / MapView as a child.
  *
@@ -69,30 +69,13 @@ export function LiveDriverLayer({
             anchor={{ x: 0.5, y: 0.5 }}
             tracksViewChanges={false}
         >
+            {/* `transform` stays inline: it is the Animated rotation value. */}
             <Animated.View
-                style={{
-                    transform: [{ rotate: rotation }],
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
+                style={{ transform: [{ rotate: rotation }] }}
+                className="items-center justify-center"
             >
-                <View
-                    style={{
-                        height: 40,
-                        width: 40,
-                        borderRadius: 20,
-                        backgroundColor: "#7928CA",
-                        borderWidth: 3,
-                        borderColor: "#fff",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        shadowColor: "#000",
-                        shadowRadius: 4,
-                        shadowOpacity: 0.35,
-                        elevation: 6,
-                    }}
-                >
-                    <Text style={{ fontSize: 18 }}>
+                <View className="h-10 w-10 rounded-full bg-inhaz-purple border-[3px] border-white items-center justify-center shadow-lg">
+                    <Text className="text-lg">
                         {getVehicleEmoji(vehicleType)}
                     </Text>
                 </View>

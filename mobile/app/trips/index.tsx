@@ -6,15 +6,15 @@ import { tripsApi, TripItem, getStatusLabel } from '@/lib/api/trips';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useAuthStore } from '@/lib/store/auth';
 
-const STATUS_COLORS: Record<string, string> = {
-  ASSIGNED: '#D97706',
-  DRIVER_EN_ROUTE: '#2563EB',
-  AT_PICKUP: '#7C3AED',
-  PICKED_UP: '#059669',
-  IN_TRANSIT: '#2563EB',
-  AT_DESTINATION: '#7C3AED',
-  DELIVERED: '#16A34A',
-  CANCELLED: '#DC2626',
+const STATUS_COLORS: Record<string, { badge: string; text: string }> = {
+  ASSIGNED: { badge: 'bg-amber-100', text: 'text-amber-600' },
+  DRIVER_EN_ROUTE: { badge: 'bg-blue-100', text: 'text-blue-600' },
+  AT_PICKUP: { badge: 'bg-purple-100', text: 'text-purple-600' },
+  PICKED_UP: { badge: 'bg-emerald-100', text: 'text-emerald-600' },
+  IN_TRANSIT: { badge: 'bg-blue-100', text: 'text-blue-600' },
+  AT_DESTINATION: { badge: 'bg-purple-100', text: 'text-purple-600' },
+  DELIVERED: { badge: 'bg-green-100', text: 'text-green-600' },
+  CANCELLED: { badge: 'bg-red-100', text: 'text-red-600' },
 };
 
 export default function TripsScreen() {
@@ -28,7 +28,7 @@ export default function TripsScreen() {
   });
 
   const renderItem = ({ item }: { item: TripItem }) => {
-    const statusColor = STATUS_COLORS[item.status] || '#6B7280';
+    const statusStyle = STATUS_COLORS[item.status] || { badge: 'bg-gray-100', text: 'text-gray-500' };
     const pickup = item.delivery_request?.stops?.find((s) => s.type === 'PICKUP');
     const destination = item.delivery_request?.stops?.find((s) => s.type === 'DESTINATION');
     const otherParty = isDriver ? item.client : item.driver;
@@ -36,12 +36,11 @@ export default function TripsScreen() {
     return (
       <TouchableOpacity
         onPress={() => router.push(`/trips/${item.id}` as any)}
-        className="bg-white mx-6 mb-3 p-4 rounded-2xl border border-gray-100"
-        style={{ elevation: 1 }}
+        className="bg-white mx-6 mb-3 p-4 rounded-2xl border border-gray-100 shadow-sm"
       >
         <View className="flex-row items-center justify-between mb-3">
-          <View className="px-3 py-1 rounded-full" style={{ backgroundColor: `${statusColor}15` }}>
-            <Text className="text-xs font-semibold" style={{ color: statusColor }}>
+          <View className={`px-3 py-1 rounded-full ${statusStyle.badge}`}>
+            <Text className={`text-xs font-semibold ${statusStyle.text}`}>
               {getStatusLabel(item.status)}
             </Text>
           </View>
@@ -123,7 +122,7 @@ export default function TripsScreen() {
           data={trips}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingVertical: 16 }}
+          contentContainerClassName="py-4"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#4B2861" />}
         />
       )}

@@ -15,20 +15,7 @@ export function CurrentLocationLayer({ location }: CurrentLocationLayerProps) {
 
     return (
         <Marker coordinate={location} anchor={{ x: 0.5, y: 0.5 }}>
-            <View
-                style={{
-                    height: 20,
-                    width: 20,
-                    borderRadius: 10,
-                    backgroundColor: "#2563EB",
-                    borderWidth: 3,
-                    borderColor: "#fff",
-                    shadowColor: "#000",
-                    shadowRadius: 3,
-                    shadowOpacity: 0.3,
-                    elevation: 4,
-                }}
-            />
+            <View className="h-5 w-5 rounded-full bg-blue-600 border-[3px] border-white shadow-md" />
         </Marker>
     );
 }

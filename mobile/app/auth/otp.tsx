@@ -70,13 +70,13 @@ export default function OtpScreen() {
           <Text className="text-gray-500 text-base text-center font-regular">
             Code envoyé au
           </Text>
-          <Text className="text-primary-800 font-semibold text-base mt-1 font-semibold">
+          <Text className="text-primary-800 font-semibold text-base mt-1">
             {phone}
           </Text>
         </View>
 
         <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-2 font-medium">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
             Code à 6 chiffres
           </Text>
           <TextInput
@@ -96,10 +96,14 @@ export default function OtpScreen() {
           onPress={handleVerifyOtp}
           disabled={loading}
         >
-          <Text className="text-white font-semibold text-base font-semibold">
+          <Text className="text-white font-semibold text-base">
             {loading ? "Vérification..." : "Vérifier"}
           </Text>
-          {!loading && <ArrowRight size={20} color="white" style={{ marginLeft: 8 }} />}
+          {!loading && (
+            <View className="ml-2">
+              <ArrowRight size={20} color="white" />
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity

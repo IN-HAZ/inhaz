@@ -230,6 +230,7 @@ export default function DriverOnboardingScreen() {
         </View>
 
         <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4">
+          {/* width is a dynamic percentage — Tailwind can't express arbitrary % here */}
           <View
             className="h-full bg-primary-800 rounded-full"
             style={{ width: `${(completedCount / totalSteps) * 100}%` }}
@@ -272,7 +273,7 @@ export default function DriverOnboardingScreen() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView className="flex-1" contentContainerClassName="flex-grow">
 
         {/* Step 1: Apply */}
         {step === 1 && (

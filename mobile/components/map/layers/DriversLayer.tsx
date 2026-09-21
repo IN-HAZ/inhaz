@@ -24,41 +24,20 @@ export function DriversLayer({ drivers }: DriversLayerProps) {
                     }}
                     anchor={{ x: 0.5, y: 0.5 }}
                 >
-                    <View style={{ alignItems: "center" }}>
-                        <View
-                            style={{
-                                height: 32,
-                                width: 32,
-                                borderRadius: 16,
-                                backgroundColor: "#7928CA",
-                                borderWidth: 2,
-                                borderColor: "#fff",
-                                alignItems: "center",
-                                justifyContent: "center",
-                            }}
-                        >
-                            <Text style={{ fontSize: 14 }}>🚚</Text>
+                    <View className="items-center">
+                        <View className="h-8 w-8 rounded-full bg-inhaz-purple border-2 border-white items-center justify-center">
+                            <Text className="text-sm">🚚</Text>
                         </View>
                     </View>
 
                     {driver.vehicleModel && (
                         <Callout>
-                            <View style={{ minWidth: 120, padding: 8 }}>
-                                <Text
-                                    style={{
-                                        fontSize: 13,
-                                        fontWeight: "600",
-                                    }}
-                                >
+                            <View className="min-w-[120px] p-2">
+                                <Text className="text-[13px] font-semibold">
                                     {driver.vehicleModel}
                                 </Text>
                                 {driver.vehicleType && (
-                                    <Text
-                                        style={{
-                                            fontSize: 11,
-                                            color: "#6B7280",
-                                        }}
-                                    >
+                                    <Text className="text-[11px] text-gray-500">
                                         {driver.vehicleType}
                                         {driver.distanceKm !== undefined
                                             ? ` · ${driver.distanceKm.toFixed(1)} km`
@@ -66,12 +45,7 @@ export function DriversLayer({ drivers }: DriversLayerProps) {
                                     </Text>
                                 )}
                                 {driver.rating !== undefined && (
-                                    <Text
-                                        style={{
-                                            fontSize: 11,
-                                            color: "#F59E0B",
-                                        }}
-                                    >
+                                    <Text className="text-[11px] text-amber-500">
                                         ★ {driver.rating.toFixed(1)}
                                     </Text>
                                 )}

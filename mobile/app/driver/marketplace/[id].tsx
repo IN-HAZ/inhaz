@@ -101,13 +101,15 @@ export default function RequestDetailScreen() {
           <Text className="text-xs font-semibold text-gray-400 uppercase mb-3">Points de passage</Text>
           {request.stops?.map((stop, index) => (
             <View key={index} className="flex-row items-start gap-3 mb-3 last:mb-0">
-              <View className="w-8 h-8 rounded-xl items-center justify-center mt-0.5"
-                style={{ backgroundColor: stop.type === 'PICKUP' ? '#DBEAFE' : '#FEE2E2' }}>
+              <View
+                className={`w-8 h-8 rounded-xl items-center justify-center mt-0.5 ${stop.type === 'PICKUP' ? 'bg-blue-100' : 'bg-red-100'}`}
+              >
                 <MapPin size={14} color={stop.type === 'PICKUP' ? '#2563EB' : '#DC2626'} />
               </View>
               <View className="flex-1">
-                <Text className="text-xs font-bold mb-0.5"
-                  style={{ color: stop.type === 'PICKUP' ? '#2563EB' : '#DC2626' }}>
+                <Text
+                  className={`text-xs font-bold mb-0.5 ${stop.type === 'PICKUP' ? 'text-blue-600' : 'text-red-600'}`}
+                >
                   {stop.type === 'PICKUP' ? 'Retrait' : 'Destination'}
                 </Text>
                 <Text className="text-gray-900 text-sm">{stop.address || 'Non renseign\u00e9'}</Text>
@@ -158,8 +160,7 @@ export default function RequestDetailScreen() {
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={offerMutation.isPending}
-            className="bg-primary-800 py-4 rounded-xl items-center"
-            style={{ opacity: offerMutation.isPending ? 0.6 : 1 }}
+            className={`bg-primary-800 py-4 rounded-xl items-center ${offerMutation.isPending ? 'opacity-60' : ''}`}
           >
             {offerMutation.isPending ? (
               <ActivityIndicator color="white" />

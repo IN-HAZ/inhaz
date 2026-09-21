@@ -73,7 +73,7 @@ export default function DocumentListScreen() {
       <FlatList
         data={documents}
         keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ padding: 24 }}
+        contentContainerClassName="p-6"
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => viewDocument(item.id)}

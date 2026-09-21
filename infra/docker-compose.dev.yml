@@ -76,7 +76,6 @@ services:
 volumes:
   pgdata:
   redisdata:
-  rustfsdata:
   vendor:
   rustfsdata:
 

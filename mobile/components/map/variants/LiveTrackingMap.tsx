@@ -128,7 +128,7 @@ export function LiveTrackingMap({
           : undefined;
 
     return (
-        <View style={{ flex: 1, position: "relative" }}>
+        <View className="flex-1 relative">
             <BaseMap
                 ref={mapRef}
                 initialRegion={initialRegion}

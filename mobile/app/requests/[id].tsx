@@ -6,12 +6,12 @@ import { useState } from 'react';
 import { requestsApi, DeliveryRequestItem } from '@/lib/api/requests';
 import { getErrorMessage } from '@/lib/api/errors';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  DRAFT: { label: 'Brouillon', color: '#6B7280', bg: '#F3F4F6' },
-  OPEN: { label: 'En attente', color: '#D97706', bg: '#FEF3C7' },
-  MATCHED: { label: 'En cours', color: '#2563EB', bg: '#DBEAFE' },
-  CANCELLED: { label: 'Annulée', color: '#DC2626', bg: '#FEE2E2' },
-  EXPIRED: { label: 'Expirée', color: '#6B7280', bg: '#F3F4F6' },
+const STATUS_CONFIG: Record<string, { label: string; badge: string; text: string }> = {
+  DRAFT: { label: 'Brouillon', badge: 'bg-gray-100', text: 'text-gray-500' },
+  OPEN: { label: 'En attente', badge: 'bg-amber-100', text: 'text-amber-600' },
+  MATCHED: { label: 'En cours', badge: 'bg-blue-100', text: 'text-blue-600' },
+  CANCELLED: { label: 'Annulée', badge: 'bg-red-100', text: 'text-red-600' },
+  EXPIRED: { label: 'Expirée', badge: 'bg-gray-100', text: 'text-gray-500' },
 };
 
 export default function RequestDetailScreen() {
@@ -75,8 +75,8 @@ export default function RequestDetailScreen() {
           <ArrowLeft size={22} color="#1F2937" />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-gray-900 flex-1">Demande #{request.id}</Text>
-        <View className="px-3 py-1 rounded-full" style={{ backgroundColor: status.bg }}>
-          <Text className="text-xs font-semibold" style={{ color: status.color }}>{status.label}</Text>
+        <View className={`px-3 py-1 rounded-full ${status.badge}`}>
+          <Text className={`text-xs font-semibold ${status.text}`}>{status.label}</Text>
         </View>
       </View>
 
@@ -108,13 +108,15 @@ export default function RequestDetailScreen() {
           <Text className="text-xs font-semibold text-gray-400 uppercase mb-3">Points de passage</Text>
           {request.stops?.map((stop, index) => (
             <View key={index} className="flex-row items-start gap-3 mb-3 last:mb-0">
-              <View className="w-8 h-8 rounded-xl items-center justify-center mt-0.5"
-                style={{ backgroundColor: stop.type === 'PICKUP' ? '#DBEAFE' : '#FEE2E2' }}>
+              <View
+                className={`w-8 h-8 rounded-xl items-center justify-center mt-0.5 ${stop.type === 'PICKUP' ? 'bg-blue-100' : 'bg-red-100'}`}
+              >
                 <MapPin size={14} color={stop.type === 'PICKUP' ? '#2563EB' : '#DC2626'} />
               </View>
               <View className="flex-1">
-                <Text className="text-xs font-bold mb-0.5"
-                  style={{ color: stop.type === 'PICKUP' ? '#2563EB' : '#DC2626' }}>
+                <Text
+                  className={`text-xs font-bold mb-0.5 ${stop.type === 'PICKUP' ? 'text-blue-600' : 'text-red-600'}`}
+                >
                   {stop.type === 'PICKUP' ? 'Retrait' : 'Destination'}
                 </Text>
                 <Text className="text-gray-900 text-sm">{stop.address || 'Non renseigné'}</Text>
@@ -192,8 +194,7 @@ export default function RequestDetailScreen() {
                   <TouchableOpacity
                     onPress={handleCancel}
                     disabled={cancelMutation.isPending}
-                    className="flex-1 bg-red-600 py-3 rounded-xl items-center"
-                    style={{ opacity: cancelMutation.isPending ? 0.6 : 1 }}
+                    className={`flex-1 bg-red-600 py-3 rounded-xl items-center ${cancelMutation.isPending ? 'opacity-60' : ''}`}
                   >
                     {cancelMutation.isPending ? (
                       <ActivityIndicator color="white" />

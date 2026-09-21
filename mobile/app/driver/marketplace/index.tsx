@@ -29,8 +29,7 @@ export default function MarketplaceScreen() {
     return (
       <TouchableOpacity
         onPress={() => router.push(`/driver/marketplace/${item.id}`)}
-        className="bg-white mx-6 mb-3 p-4 rounded-2xl border border-gray-100"
-        style={{ elevation: 1 }}
+        className="bg-white mx-6 mb-3 p-4 rounded-2xl border border-gray-100 shadow-sm"
       >
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center gap-2">
@@ -123,7 +122,7 @@ export default function MarketplaceScreen() {
           data={data?.requests || []}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingVertical: 16 }}
+          contentContainerClassName="py-4"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#4B2861" />}
           onEndReached={() => {
             if (data?.pagination && page < data.pagination.last_page) {

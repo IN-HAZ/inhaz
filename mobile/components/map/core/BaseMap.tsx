@@ -89,7 +89,7 @@ export const BaseMap = forwardRef<BaseMapHandle, BaseMapProps>(
         return (
             <MapView
                 ref={mapRef}
-                style={{ flex: 1 }}
+                className="flex-1"
                 initialRegion={resolvedInitialRegion}
                 showsUserLocation={false}
                 showsMyLocationButton={false}

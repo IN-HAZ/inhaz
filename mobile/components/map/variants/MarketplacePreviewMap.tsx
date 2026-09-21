@@ -93,7 +93,8 @@ export function MarketplacePreviewMap({
     ]);
 
     return (
-        <View style={{ height, borderRadius: 12, overflow: "hidden" }}>
+        // `height` stays inline: it is a dynamic prop; the rest is Tailwind.
+        <View style={{ height }} className="overflow-hidden rounded-xl">
             <BaseMap
                 ref={mapRef}
                 initialRegion={initialRegion()}

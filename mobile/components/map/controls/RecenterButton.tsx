@@ -11,6 +11,9 @@ interface RecenterButtonProps {
  * Floating recenter button — positions itself above any bottom sheet overlay.
  *
  * Stateless: the parent variant owns the location logic and passes `onPress`.
+ *
+ * `position: absolute` + `bottom` stay inline because `bottomOffset` is runtime
+ * geometry passed by the parent; everything else is Tailwind classes.
  */
 export function RecenterButton({
     onPress,
@@ -24,20 +27,8 @@ export function RecenterButton({
                 position: "absolute",
                 bottom: bottomOffset + 12,
                 right: 12,
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#fff",
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: "#E5E7EB",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 4,
             }}
+            className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-lg items-center justify-center"
         >
             <LocateFixed size={20} color="#4B2861" />
         </TouchableOpacity>

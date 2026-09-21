@@ -10,7 +10,6 @@ import {
   Keyboard,
   PanResponder,
   Dimensions,
-  StyleSheet,
   Platform,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
@@ -447,9 +446,9 @@ export default function CreateRequestScreen() {
   // ── Render ────────────────────────────────────────────────────────────────────
   if (isInitializing) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+      <View className="flex-1 bg-white items-center justify-center">
         <ActivityIndicator size="large" color="#7928CA" />
-        <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 12 }}>Initialisation de la demande...</Text>
+        <Text className="text-gray-500 text-[13px] mt-3">Initialisation de la demande...</Text>
       </View>
     );
   }
@@ -461,10 +460,10 @@ export default function CreateRequestScreen() {
     (step === 3 && !canProceedStep3);
 
   return (
-    <View style={styles.root}>
+    <View className="flex-1 bg-black">
 
       {/* ── Full-screen map ──────────────────────────────────────────────────── */}
-      <View style={StyleSheet.absoluteFill}>
+      <View className="absolute inset-0">
         <RequestMap
           ref={mapRef}
           region={flyRegion}
@@ -481,19 +480,23 @@ export default function CreateRequestScreen() {
       {/* ── Back button ──────────────────────────────────────────────────────── */}
       <TouchableOpacity
         onPress={() => (step > 1 ? setStep(step - 1) : router.back())}
-        style={styles.backBtn}
+        className="absolute top-12 left-4 z-20 bg-white/90 p-2.5 rounded-full shadow-md"
       >
         <ArrowLeft size={20} color="#1F2937" />
       </TouchableOpacity>
 
       {/* ── Step badge ───────────────────────────────────────────────────────── */}
-      <View style={styles.stepBadge}>
-        <Text style={styles.stepBadgeText}>Étape {step} / 5</Text>
+      <View className="absolute top-12 right-4 z-20 bg-gray-900/90 px-3 py-1.5 rounded-full">
+        <Text className="text-white text-[11px] font-bold">Étape {step} / 5</Text>
       </View>
 
       {/* ── Selected pin card (floats in visible map area) ───────────────────── */}
       {selectedPin && (
-        <Animated.View style={[styles.pinCard, { bottom: Animated.subtract(SCREEN_HEIGHT - SNAP_FULL, sheetTopAnim as any) }]}>
+        // bottom is an Animated value derived from the sheet position
+        <Animated.View
+          className="absolute left-3 right-3 z-[25]"
+          style={{ bottom: Animated.subtract(SCREEN_HEIGHT - SNAP_FULL, sheetTopAnim as any) }}
+        >
           <SelectedPinCard
             selectedPin={selectedPin}
             onDismiss={() => setSelectedPin(null)}
@@ -503,22 +506,35 @@ export default function CreateRequestScreen() {
       )}
 
       {/* ── Draggable bottom sheet ───────────────────────────────────────────── */}
-      <Animated.View style={[styles.sheet, { top: sheetTopAnim }]}>
+      {/* top is the Animated value driving the drag; the rest is Tailwind. */}
+      <Animated.View
+        className="absolute left-0 right-0 bottom-0 bg-white rounded-t-3xl shadow-2xl z-10"
+        style={{ top: sheetTopAnim }}
+      >
 
         {/* Drag handle — responds to pan gestures */}
-        <View style={styles.handleArea} {...panResponder.panHandlers}>
-          <View style={styles.handleBar} />
-          <View style={styles.headerRow}>
-            <Text style={styles.headerTitle}>
+        <View className="pt-2.5 pb-2 px-5 border-b border-gray-100" {...panResponder.panHandlers}>
+          <View className="w-9 h-1 rounded bg-gray-300 self-center mb-2.5" />
+          <View className="flex-row items-center justify-between">
+            <Text className="text-sm font-bold text-gray-900 flex-1">
               {step === 1 && '1. Adresses & Trajet'}
               {step === 2 && '2. Colis & Photos'}
               {step === 3 && '3. Type de Véhicule'}
               {step === 4 && '4. Budget & Prix proposé'}
               {step === 5 && '5. Récapitulatif & Publication'}
             </Text>
-            <View style={styles.dots}>
+            <View className="flex-row gap-[5px]">
               {[1, 2, 3, 4, 5].map((s) => (
-                <View key={s} style={[styles.dot, s === step ? styles.dotActive : s < step ? styles.dotDone : styles.dotPending]} />
+                <View
+                  key={s}
+                  className={`h-[7px] rounded ${
+                    s === step
+                      ? 'w-[18px] bg-inhaz-purple'
+                      : s < step
+                        ? 'w-[7px] bg-purple-300'
+                        : 'w-[7px] bg-gray-200'
+                  }`}
+                />
               ))}
             </View>
           </View>
@@ -526,8 +542,8 @@ export default function CreateRequestScreen() {
 
         {/* Scrollable form */}
         <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.scrollContent}
+          className="flex-1"
+          contentContainerClassName="px-5 pt-3 pb-6"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           onScrollBeginDrag={() => snapSheet(SNAP_FULL)}
@@ -567,14 +583,18 @@ export default function CreateRequestScreen() {
 
         {/* Nav buttons */}
         {step < 5 && (
-          <View style={styles.navRow}>
+          <View className={`flex-row items-center justify-between px-5 pt-3 border-t border-gray-100 ${Platform.OS === 'ios' ? 'pb-7' : 'pb-4'}`}>
             {step > 1 ? (
-              <TouchableOpacity onPress={() => setStep(step - 1)} style={styles.btnBack}>
-                <Text style={styles.btnBackText}>Retour</Text>
+              <TouchableOpacity onPress={() => setStep(step - 1)} className="px-5 py-3 rounded-xl border border-gray-300">
+                <Text className="text-gray-700 text-xs font-bold">Retour</Text>
               </TouchableOpacity>
             ) : <View />}
-            <TouchableOpacity onPress={handleNextStep} disabled={isNextDisabled} style={[styles.btnNext, isNextDisabled && styles.btnNextDisabled]}>
-              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.btnNextText}>Suivant →</Text>}
+            <TouchableOpacity
+              onPress={handleNextStep}
+              disabled={isNextDisabled}
+              className={`px-7 py-3 rounded-xl ${isNextDisabled ? 'bg-purple-300' : 'bg-inhaz-purple'}`}
+            >
+              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text className="text-white text-xs font-bold">Suivant →</Text>}
             </TouchableOpacity>
           </View>
         )}
@@ -582,63 +602,3 @@ export default function CreateRequestScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
-
-  backBtn: {
-    position: 'absolute', top: 48, left: 16, zIndex: 20,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    padding: 10, borderRadius: 999,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 5,
-  },
-  stepBadge: {
-    position: 'absolute', top: 48, right: 16, zIndex: 20,
-    backgroundColor: 'rgba(25,10,45,0.88)',
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999,
-  },
-  stepBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-
-  pinCard: {
-    position: 'absolute', left: 12, right: 12, zIndex: 25,
-  },
-
-  // Sheet: top is animated; bottom is always 0 → height = SCREEN_HEIGHT - top
-  sheet: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.14, shadowRadius: 12, elevation: 18,
-    zIndex: 10,
-  },
-
-  handleArea: {
-    paddingTop: 10, paddingBottom: 8, paddingHorizontal: 20,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
-  },
-  handleBar: {
-    width: 36, height: 4, borderRadius: 2,
-    backgroundColor: '#D1D5DB', alignSelf: 'center', marginBottom: 10,
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerTitle: { fontSize: 14, fontWeight: '700', color: '#111827', flex: 1 },
-  dots: { flexDirection: 'row', gap: 5 },
-  dot: { height: 7, borderRadius: 4 },
-  dotActive:  { width: 18, backgroundColor: '#7928CA' },
-  dotDone:    { width: 7,  backgroundColor: '#C4B5FD' },
-  dotPending: { width: 7,  backgroundColor: '#E5E7EB' },
-
-  scrollContent: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 },
-
-  navRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: Platform.OS === 'ios' ? 28 : 16,
-    borderTopWidth: 1, borderTopColor: '#F3F4F6',
-  },
-  btnBack:        { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#D1D5DB' },
-  btnBackText:    { color: '#374151', fontSize: 12, fontWeight: '700' },
-  btnNext:        { paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12, backgroundColor: '#7928CA' },
-  btnNextDisabled:{ backgroundColor: '#C4B5FD' },
-  btnNextText:    { color: '#fff', fontSize: 12, fontWeight: '700' },
-});

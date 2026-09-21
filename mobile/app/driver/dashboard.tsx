@@ -8,7 +8,6 @@ import {
     Switch,
     ActivityIndicator,
     RefreshControl,
-    StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, useRouter } from "expo-router";
@@ -113,7 +112,7 @@ export default function DriverDashboardScreen() {
                         tintColor={PURPLE}
                     />
                 }
-                contentContainerStyle={{ paddingBottom: 40 }}
+                contentContainerClassName="pb-10"
             >
                 {/* Header */}
                 <View className="px-5 pt-4 pb-5 bg-white border-b border-gray-100 flex-row items-center justify-between shadow-sm">
@@ -174,11 +173,12 @@ export default function DriverDashboardScreen() {
                 {/* Warning Banner if account not approved */}
                 {!isApproved && (
                     <View className="mx-5 mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex-row items-start">
-                        <AlertCircle
-                            size={20}
-                            color="#D97706"
-                            style={{ marginTop: 2 }}
-                        />
+                        <View className="mt-0.5">
+                            <AlertCircle
+                                size={20}
+                                color="#D97706"
+                            />
+                        </View>
                         <View className="ml-3 flex-1">
                             <Text className="text-amber-900 font-bold text-sm">
                                 Vérification en cours
@@ -316,8 +316,7 @@ export default function DriverDashboardScreen() {
                     <TouchableOpacity
                         onPress={() => router.push("/driver/marketplace")}
                         activeOpacity={0.85}
-                        style={{ backgroundColor: PURPLE }}
-                        className="py-4 px-6 rounded-2xl flex-row items-center justify-between shadow-lg"
+                        className="py-4 px-6 rounded-2xl flex-row items-center justify-between shadow-lg bg-primary-800"
                     >
                         <View className="flex-row items-center">
                             <View className="w-10 h-10 rounded-xl bg-white/15 items-center justify-center mr-3.5">

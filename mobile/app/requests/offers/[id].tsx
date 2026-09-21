@@ -5,11 +5,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { offersApi, OfferItem } from '@/lib/api/offers';
 import { getErrorMessage } from '@/lib/api/errors';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING: { label: 'En attente', color: '#D97706', bg: '#FEF3C7' },
-  ACCEPTED: { label: 'Accept\u00e9e', color: '#16A34A', bg: '#DCFCE7' },
-  REJECTED: { label: 'Rejet\u00e9e', color: '#DC2626', bg: '#FEE2E2' },
-  WITHDRAWN: { label: 'Retir\u00e9e', color: '#6B7280', bg: '#F3F4F6' },
+const STATUS_CONFIG: Record<string, { label: string; badge: string; text: string }> = {
+  PENDING: { label: 'En attente', badge: 'bg-amber-100', text: 'text-amber-600' },
+  ACCEPTED: { label: 'Accept\u00e9e', badge: 'bg-emerald-100', text: 'text-emerald-600' },
+  REJECTED: { label: 'Rejet\u00e9e', badge: 'bg-red-100', text: 'text-red-600' },
+  WITHDRAWN: { label: 'Retir\u00e9e', badge: 'bg-gray-100', text: 'text-gray-500' },
 };
 
 export default function OffersScreen() {
@@ -68,8 +68,8 @@ export default function OffersScreen() {
               <Text className="text-gray-400 text-xs">{item.driver?.phone}</Text>
             </View>
           </View>
-          <View className="px-3 py-1 rounded-full" style={{ backgroundColor: status.bg }}>
-            <Text className="text-xs font-semibold" style={{ color: status.color }}>{status.label}</Text>
+          <View className={`px-3 py-1 rounded-full ${status.badge}`}>
+            <Text className={`text-xs font-semibold ${status.text}`}>{status.label}</Text>
           </View>
         </View>
 
@@ -134,7 +134,7 @@ export default function OffersScreen() {
           data={data?.offers || []}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
-          contentContainerStyle={{ paddingVertical: 16 }}
+          contentContainerClassName="py-4"
         />
       )}
     </View>

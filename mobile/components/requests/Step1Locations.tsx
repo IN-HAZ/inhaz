@@ -32,6 +32,14 @@ function stopLabel(index: number, total: number): string {
   return `ÉTAPE ${index}`;
 }
 
+function stopClass(index: number, total: number): string {
+  if (index === 0) return 'text-blue-600';
+  if (index === total - 1) return 'text-red-600';
+  return 'text-orange-500';
+}
+
+// Icon `color` stays a hex prop: lucide-react-native renders its own <Svg>,
+// which is not a NativeWind-registered component.
 function stopColor(index: number, total: number): string {
   if (index === 0) return '#2563EB';
   if (index === total - 1) return '#DC2626';
@@ -73,7 +81,7 @@ export function Step1Locations({
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center gap-2 flex-1">
                 <MapPin size={15} color={color} />
-                <Text className="text-xs font-bold" style={{ color }}>
+                <Text className={`text-xs font-bold ${stopClass(index, total)}`}>
                   {stopLabel(index, total)}
                 </Text>
                 {hasCoords && (
@@ -121,7 +129,7 @@ export function Step1Locations({
             <View className="relative mb-2">
               <View
                 className={`flex-row items-center bg-white border rounded-lg px-3 py-1 ${
-                  isThisActive ? 'border-inhaz-purple' : 'border-gray-200'
+                  isThisActive ? 'border-primary-800' : 'border-gray-200'
                 }`}
               >
                 <Search size={15} color="#9CA3AF" />
@@ -153,8 +161,7 @@ export function Step1Locations({
 
               {/* Live suggestions dropdown */}
               {isThisActive && searchResults.length > 0 && (
-                <View className="absolute left-0 right-0 top-full bg-white border border-gray-200 rounded-xl mt-1 shadow-xl z-30"
-                  style={{ maxHeight: 200 }}>
+                <View className="absolute left-0 right-0 top-full bg-white border border-gray-200 rounded-xl mt-1 shadow-xl z-30 max-h-[200px]">
                   <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled>
                     {searchResults.map((item) => (
                       <TouchableOpacity
