@@ -51,21 +51,21 @@
 
 ### 1.1 Establish styling conventions
 
--   [ ] Make Tailwind/NativeWind the only styling system for application
+-   [x] Make Tailwind/NativeWind the only styling system for application
     UI.
--   [ ] Remove component-level `StyleSheet` usage from
+-   [x] Remove component-level `StyleSheet` usage from
     screens/components.
--   [ ] Do not put hardcoded style objects inside `.tsx` files.
--   [ ] Use only `className` with Tailwind/custom classes in components.
--   [ ] Keep styling definitions beside the component when they are
+-   [x] Do not put hardcoded style objects inside `.tsx` files.
+-   [x] Use only `className` with Tailwind/custom classes in components.
+-   [x] Keep styling definitions beside the component when they are
     component-specific.
--   [ ] Keep all shared/reused custom classes in a single global styling
+-   [x] Keep all shared/reused custom classes in a single global styling
     file: `global.css`.
--   [ ] Keep design tokens in `tailwind.config.js`.
+-   [x] Keep design tokens in `tailwind.config.js`.
 
 ### 1.2 Custom class system
 
--   [ ] Define reusable semantic classes for repeated UI patterns in
+-   [x] Define reusable semantic classes for repeated UI patterns in
     `global.css` (`@layer components`), for example:
     -   `btn-primary`
     -   `btn-secondary`
@@ -79,24 +79,24 @@
     -   `badge-success`
     -   `badge-warning`
     -   `badge-error`
--   [ ] Prefer semantic custom classes over repeating long Tailwind
+-   [x] Prefer semantic custom classes over repeating long Tailwind
     class strings.
--   [ ] Add any other repeated patterns found during the sweep (e.g.
+-   [x] Add any other repeated patterns found during the sweep (e.g.
     sheet drag handle, nav header, list card).
--   [ ] Refactor `components/ui/*` (Button, Input, Card, Badge,
+-   [x] Refactor `components/ui/*` (Button, Input, Card, Badge,
     Toast/ToastProvider) to consume only the semantic classes; delete
     their variant/`StyleSheet` maps.
--   [ ] Refactor in dependency order: `components/requests/*` →
+-   [x] Refactor in dependency order: `components/requests/*` →
     `app/auth/*` → `app/(tabs)/*` (before deletion) → `app/driver/*` →
     `app/requests/*` → `app/trips/*` → `app/documents/[id]`.
--   [ ] Refactor the map UI styles where practical.
--   [ ] Map carve-out: keep runtime geometry inline only in `BaseMap`,
+-   [x] Refactor the map UI styles where practical.
+-   [x] Map carve-out: keep runtime geometry inline only in `BaseMap`,
     `RecenterButton`, `LiveDriverLayer`, and the wizard's animated sheet;
     all other map components use `className` (layout via Tailwind).
--   [ ] Search the whole project for `StyleSheet`, `style={{`, and
+-   [x] Search the whole project for `StyleSheet`, `style={{`, and
     static `style=` usages.
--   [ ] Remove all styling outside styling files.
--   [ ] Remove `constants/Colors.ts` usages (file is deleted in §4) —
+-   [x] Remove all styling outside styling files.
+-   [x] Remove `constants/Colors.ts` usages (file is deleted in §4) —
     replace with design tokens.
 
 ### 1.3 Styling validation
@@ -106,6 +106,14 @@
 -   [ ] Verify web if web support is still required.
 -   [ ] Verify no visual regressions in buttons, inputs, cards, maps,
     sheets, badges, and tabs.
+
+> W1 2026-09-21: styling sweep delivered. §1.3 device verification
+> (Android/iOS/web + visual regression) cannot run in this environment —
+> needs a device/emulator. Remaining inline styles are only the §0
+> runtime-geometry exception (map `edgePadding`/`anchor`/animated values/
+> dynamic offsets): map preview heights (dynamic props), wizard sheet
+> animated `top`/`bottom`, onboarding progress width, Toast opacity,
+> RecenterButton position, LiveDriverLayer transform, lucide color props.
 
 ------------------------------------------------------------------------
 

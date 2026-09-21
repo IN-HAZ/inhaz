@@ -514,7 +514,7 @@ export default function CreateRequestScreen() {
 
         {/* Drag handle — responds to pan gestures */}
         <View className="pt-2.5 pb-2 px-5 border-b border-gray-100" {...panResponder.panHandlers}>
-          <View className="w-9 h-1 rounded bg-gray-300 self-center mb-2.5" />
+          <View className="sheet-drag-handle mb-2.5" />
           <View className="flex-row items-center justify-between">
             <Text className="text-sm font-bold text-gray-900 flex-1">
               {step === 1 && '1. Adresses & Trajet'}
