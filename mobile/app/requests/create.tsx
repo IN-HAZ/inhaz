@@ -25,6 +25,7 @@ import { getErrorMessage } from '@/lib/api/errors';
 import { useAuthStore } from '@/lib/store/auth';
 
 import { usePlaceSearch } from '@/lib/hooks/usePlaceSearch';
+import { useCameraPermission } from '@/lib/hooks/useCameraPermission';
 import { StopItem, PhotoItem, VehicleOption } from '@/components/requests/types';
 import { SelectedPinCard } from '@/components/requests/SelectedPinCard';
 import { Step1Locations } from '@/components/requests/Step1Locations';
@@ -72,6 +73,12 @@ function fitRegion(points: { latitude: number; longitude: number }[]): Region | 
 export default function CreateRequestScreen() {
   const router   = useRouter();
   const { user } = useAuthStore();
+
+  // Camera permission state machine for package photos (feature-time only).
+  // The same featureKey is reused by the RequestWizard after the W8 refactor so
+  // a permanent denial stays remembered across the move.
+  const { state: cameraState, request: requestCamera, openSettings: openCameraSettings } =
+    useCameraPermission('request-package-photos');
 
   if (user?.role === 'driver') return <Redirect href="/driver/dashboard" />;
 
@@ -403,8 +410,49 @@ export default function CreateRequestScreen() {
   };
 
   // ── Photo upload ──────────────────────────────────────────────────────────────
+  const showCameraBlockedAlert = () =>
+    Alert.alert(
+      'Caméra inaccessible',
+      "L'accès à la caméra a été bloqué. Ouvrez les réglages de l'app pour l'autoriser.",
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Ouvrir les réglages', onPress: () => openCameraSettings() },
+      ],
+    );
+
+  const showCameraDeniedAlert = () =>
+    Alert.alert(
+      'Caméra requise',
+      "L'accès à la caméra est nécessaire pour photographier le colis.",
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Réessayer', onPress: () => handleSelectPhotos(true) },
+      ],
+    );
+
+  /** Returns true when the camera is usable; otherwise shows the UX for the current state. */
+  const ensureCameraAccess = async (): Promise<boolean> => {
+    if (cameraState === 'granted') return true;
+    if (cameraState === 'blocked') {
+      // Permanently denied → message + Settings only, never re-open the dialog.
+      showCameraBlockedAlert();
+      return false;
+    }
+    const next = await requestCamera();
+    if (next === 'granted') return true;
+    if (next === 'blocked') {
+      showCameraBlockedAlert();
+      return false;
+    }
+    showCameraDeniedAlert();
+    return false;
+  };
+
   const handleSelectPhotos = async (useCamera = false) => {
     try {
+      if (useCamera && !(await ensureCameraAccess())) {
+        return;
+      }
       const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8, allowsMultipleSelection: !useCamera };
       const result = useCamera ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
       if (!result.canceled && result.assets?.length > 0) {

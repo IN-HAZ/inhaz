@@ -171,40 +171,58 @@
 
 ### 3.1 Permission architecture
 
--   [ ] Extend `lib/permissions.ts` to support camera and media-library
+-   [x] Extend `lib/permissions.ts` to support camera and media-library
     permissions (via the expo-image-picker permission APIs: request/get,
     `canAskAgain`).
--   [ ] Add an "Open Settings" helper (native app settings) and a
+-   [x] Add an "Open Settings" helper (native app settings) and a
     re-check helper for returning from settings.
--   [ ] Keep permission logic centralized.
--   [ ] Do not request feature-specific permissions globally at boot
+-   [x] Keep permission logic centralized.
+-   [x] Do not request feature-specific permissions globally at boot
     unless required.
 -   [ ] Location permission is requested on entering the client home /
     driver home (map-first screens), not at boot.
 
 ### 3.2 Camera permission UX
 
--   [ ] Request camera permission when entering a feature that requires
+-   [x] Request camera permission when entering a feature that requires
     the camera (feature-time only).
--   [ ] If permission is denied, show a clear explanation that camera
+-   [x] If permission is denied, show a clear explanation that camera
     access is required for the feature.
--   [ ] Provide an "Open Settings" action.
--   [ ] Open the native app settings using the appropriate Expo API.
--   [ ] On returning to the app, re-check the camera permission.
--   [ ] If permission is still denied, keep the feature unavailable.
--   [ ] Avoid repeatedly triggering the native permission dialog after
+-   [x] Provide an "Open Settings" action.
+-   [x] Open the native app settings using the appropriate Expo API.
+-   [x] On returning to the app, re-check the camera permission.
+-   [x] If permission is still denied, keep the feature unavailable.
+-   [x] Avoid repeatedly triggering the native permission dialog after
     the user has permanently denied it (blocked → message + Settings
     button only, no dialog loop).
--   [ ] Add a `useCameraPermission(featureKey)` hook owning the state
+-   [x] Add a `useCameraPermission(featureKey)` hook owning the state
     machine; integrate it at the only two camera touchpoints: profile
-    photo capture (client + driver onboarding, §6) and step-2 package
-    photos (§8).
+    photo capture (client + driver onboarding, §6 — lands with the §6
+    screens in W7) and step-2 package photos (§8 — integrated today in
+    `app/requests/create.tsx`, carried into the RequestWizard).
 -   [ ] Handle:
     -   first request
     -   denied
     -   denied again / blocked
     -   granted
     -   returning from settings
+
+> W3 2026-09-22: permission infrastructure delivered. `lib/permissions.ts`
+> gains camera + media-library request/get helpers and `openAppSettings()`
+> (expo-linking `openSettings`); new `lib/hooks/useCameraPermission.ts`
+> owns the state machine (`undetermined` → `granted` / `denied-can-ask` /
+> `blocked`), passive mount sync, AppState return-from-settings re-check,
+> and a per-feature permanent-denial registry so the native dialog is never
+> re-opened after blocking. Integrated at the Step-2 package photos
+> touchpoint in `app/requests/create.tsx` (featureKey
+> `request-package-photos`, reused by the W8 RequestWizard): granted →
+> launch, denied → French explanation + retry, blocked → French message +
+> "Ouvrir les réglages". The gallery path stays best-effort (system picker
+> needs no permission on modern Android/iOS). Profile-photo touchpoint
+> lands with onboarding in W7. Location-on-home integration is staged for
+> W8/W9. `npx tsc --noEmit` passes. Device verification of the full matrix
+> (first request / denied / blocked / settings-return / granted + no camera
+> permission at boot) still requires a device/emulator.
 
 ------------------------------------------------------------------------
 
