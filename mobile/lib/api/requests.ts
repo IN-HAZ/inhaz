@@ -1,4 +1,7 @@
 import { apiClient } from './client';
+import { USE_MOCK } from './config';
+import { offersApi, BrowseRequest } from './offers';
+import { mockBrowseNearby, mockRequestDetailForDriver } from './mock';
 
 export interface RequestStop {
   type: 'PICKUP' | 'DESTINATION';
@@ -175,5 +178,37 @@ export const requestsApi = {
   deletePhoto: async (photoId: number) => {
     const response = await apiClient.delete<{ message: string }>(`/request-photos/${photoId}`);
     return response.data;
+  },
+
+  /**
+   * Driver-facing request detail (W6 §6.4). Mock-backed until the backend
+   * lets drivers read a single request (Phase B); with the flag off it falls
+   * back to the browse list — today's only driver-visible source.
+   */
+  getForDriver: async (id: number): Promise<BrowseRequest> => {
+    if (USE_MOCK) {
+      return mockRequestDetailForDriver(id);
+    }
+    const { requests } = await offersApi.browse(1);
+    const found = requests.find((r) => r.id === id);
+    if (!found) {
+      throw new Error('Demande introuvable.');
+    }
+    return found;
+  },
+
+  /**
+   * Geo-scoped browse (W6 §6.4). The backend accepts geo params with the
+   * Phase B nearby-request ticket; until then it falls back to plain browse
+   * (mock provides the geo shape when the flag is on).
+   */
+  browseWithGeo: async (
+    page = 1,
+    region?: { latitude: number; longitude: number; radiusKm?: number }
+  ): Promise<{ requests: BrowseRequest[]; pagination: Pagination }> => {
+    if (USE_MOCK) {
+      return mockBrowseNearby(page);
+    }
+    return offersApi.browse(page);
   },
 };

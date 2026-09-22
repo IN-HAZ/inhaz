@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { apiClient } from '../../lib/api/client';
+import { driverApi } from '../../lib/api/driver';
 import { useToast } from '../../components/ui/ToastProvider';
 import { getErrorMessage } from '../../lib/api/errors';
 import { ArrowLeft } from 'lucide-react-native';
@@ -22,7 +22,7 @@ export default function VehicleScreen() {
 
     setLoading(true);
     try {
-      await apiClient.post('/driver/vehicle', {
+      await driverApi.saveVehicle({
         brand,
         model,
         registration_number: registrationNumber,

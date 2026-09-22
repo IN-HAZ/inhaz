@@ -18,7 +18,8 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 | **W3** | Permission infrastructure: `lib/permissions.ts` + camera/media-library request/get helpers and `openAppSettings()` (expo-linking); new `lib/hooks/useCameraPermission.ts` state machine (`undetermined` → `granted`/`denied-can-ask`/`blocked`), passive mount sync, AppState return-from-settings re-check, per-feature permanent-denial registry (no native-dialog loop after blocking); integrated at the Step-2 package photos touchpoint in `app/requests/create.tsx` (featureKey `request-package-photos`, reused by W8 RequestWizard): granted → launch, denied → French explanation + retry, blocked → message + "Ouvrir les réglages". Gallery path stays best-effort (system picker needs no permission on modern Android/iOS). `npx tsc --noEmit` passes. | 🟢 done — **awaiting review** (device matrix: first-request/denied/blocked/settings-return/granted) |
 | **W4** | Expo template leftovers — re-verified & tracked: `components/Themed.tsx`/`StyledText.tsx`/`ExternalLink.tsx`/`EditScreenInfo.tsx`/`useColorScheme.ts`/`useClientOnlyValue.ts`, `constants/Colors.ts`, `app/modal.tsx` (+ Stack entry) all deleted (shipped inside the W1 sweep); `+not-found.tsx` plain RN; zero references across `app/` + `components/` + `lib/`; `npx tsc --noEmit` passes. No code change this pass. | 🟢 done — **awaiting review** |
 | **W5** | Auth architecture + role guards: `lib/store/auth.ts` gains `driver_profile` on `User` (parsed + normalized in `checkAuth`/`setSession`; `verify-otp` doesn't load it, so `otp.tsx` refreshes `/me` after login) and role selectors `selectIsDriver`/`selectIsClient`/`selectDriverStatus`/`selectIsDriverApproved` + `useRole()`; new `components/auth/RoleGuard.tsx` guards at layout level (unauth → `/auth/login`, wrong persona → own home, `null` until auth restored); routes restructured into `(client)/` (index, requests/*, profile) and `(driver)/` (index, marketplace/*, documents/*, profile, dashboard) tab groups — URLs unchanged; shared `auth/`, `trips/`, `documents/[id]`, onboarding (`app/driver/*`) stay outside; `app/(tabs)/` + `two.tsx` deleted; per-screen role redirects removed (marketplace×2, dashboard, create.tsx); `+not-found` routes home by role; driver home shows tier-2 status pill («Vérification en cours» / rejection). `npx tsc --noEmit` passes. | 🟢 done — **awaiting review** (fresh-login landings, pending-driver gate, cold-start group resolution need a device) |
-| W6–W11 | See `mobile/plan.md`. | ⏳ pending |
+| **W6** | API modules + mock data layer: new `lib/api/auth.ts` (sendOtp/verifyOtp/me/updateProfile/switchRole/logout — store `checkAuth`/`logout` route through it), `lib/api/documents.ts` (list/upload/getView — viewer's web-blob + native FileSystem cache download encapsulated), `lib/api/files.ts` (`fileUriToBlob`/`putToSignedUrl` for the wizard presigned PUT), `lib/api/uploads.ts` (profile photo, mock seam), `lib/api/feed.ts` (`subscribeLiveFeed`, mock seam), `lib/api/config.ts` (`EXPO_PUBLIC_USE_MOCK`, default false in `.env(.example)`), `lib/api/queryKeys.ts` (canonical RQ keys — hooks + screen queries refactored onto them); `driver.ts` extended (apply/getProfile/saveVehicle/verificationStatus/nearbyDrivers), `requests.ts` extended (`getForDriver`, `browseWithGeo`); typed fakes in `lib/api/mock/*` (nearby, feed, requests, uploads). Screens: zero `apiClient`/`fetch(` in `app/` (done-criteria grep clean); `marketplace/index` → shared `useBrowseRequests` hook; `marketplace/[id]` → `requestsApi.getForDriver`. `npx tsc --noEmit` passes. | 🟢 done — **awaiting review** (mock-feature visuals need a device) |
+| W7–W11 | See `mobile/plan.md`. | ⏳ pending |
 
 ---
 
@@ -74,6 +75,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Phase A W1:** Login/OTP screens, secure-store auth store swept to semantic Tailwind classes (`mobile/global.css`). No feature change.
 * **Phase A W2:** Root layout boot trimmed — only the 6 used Inter weights loaded, boot-time location permission removed (feature-time: home maps in W8/W9), auth-restoration guard documented; routing payload unchanged. No feature change.
 * **Phase A W5:** Post-login routing in `app/auth/otp.tsx` now refreshes `/me` (the `verify-otp` payload doesn't load `driver_profile`) then routes by persona: incomplete profile → role-profile screen, otherwise the role group home (`/(client)` / `/(driver)`). No API change.
+* **Phase A W6:** Login/OTP screens call `lib/api/auth.ts` (`sendOtp`/`verifyOtp`/`me`) instead of raw `apiClient`; `otp.tsx` refreshes `/me` via `authApi.me()` after `setSession`. No API change.
 * **Problems / Notes:** Production SMS Gateway driver (e.g., Twilio / Infobip) needs API key config in `.env`; local environment logs OTPs to Mailpit/database.
 
 #### US-102: Sanctum Token & Session Management
@@ -87,6 +89,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Details & Status:** Full token lifecycle handling. Mobile Axios client injects `Authorization: Bearer <token>` header, handles 401 unauthenticated errors, and persists token securely using SecureStore.
 * **Phase A W1:** Cosmetic reformat (whitespace only) of `mobile/lib/store/auth.ts` folded into the W1 commit.
 * **Phase A W2:** 401 mid-session chain verified for the redirect-loop fix: `lib/api/client.ts` 401 interceptor → `onUnauthenticated()` → store `resetAuth()` → root-layout guard routes to `/auth/login`. No feature change.
+* **Phase A W6:** Store `checkAuth()`/`logout()` now route through `authApi` (`me()`, `logout()`); the interceptor/auth-token wiring stays in `lib/api/client.ts`. No API change.
 * **Problems / Notes:** None.
 
 #### US-103: Dual-Role Switching (Client / Driver)
@@ -114,6 +117,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Details & Status:** Backend profile retrieval (`GET /me`) and update (`PUT /me`) endpoints are fully functional. Mobile app includes profile viewing and inline name/email editing on `mobile/app/(client)/profile.tsx`.
 * **Phase A W1:** Profile screen header shadow + brand colors converted to Tailwind classes (`shadow-lg shadow-primary-800/15`, `bg-primary-800`). No feature change.
 * **Phase A W5:** Profile moved into the `(client)` route group (`app/(client)/profile.tsx`); the driver-application state now comes from the auth store (`driver_profile` via `/me`) instead of a duplicate `/driver/profile` fetch, and a REJECTED candidature shows `rejection_reason`. Role-switch/driver-home rows that only made sense on the old role-generic tab are gone (approved drivers live in the `(driver)` area).
+* **Phase A W6:** Profile save now calls `authApi.updateProfile()` (typed); the driver profile screen `app/(driver)/profile.tsx` loads via `authApi.me()` + `driverApi.getProfile()`. No API change.
 * **Problems / Notes:** Dedicated profile picture / avatar photo picker upload (`POST /api/v1/profile/avatar`) is pending implementation.
 
 #### US-105: Profile Configuration Screen
@@ -153,6 +157,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
   * Mobile Screens: [mobile/app/driver/onboarding.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/onboarding.tsx), [mobile/app/driver/documents/upload.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/documents/upload.tsx), [mobile/app/driver/vehicle.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/vehicle.tsx)
 * **Details & Status:** Document upload API with validation (PDF, JPEG, PNG, max 10MB), secure streaming endpoint (`GET /api/v1/driver/documents/{id}/view`), vehicle creation, and step-by-step mobile UI flow.
 * **Phase A W1:** Onboarding + documents list screens swept to semantic classes (wizard progress width kept inline — Tailwind can't express dynamic %). No feature change.
+* **Phase A W6:** All document HTTP moved into `lib/api/documents.ts` (`list`/`upload`/`getView`) — upload's blob branching (data:/blob: vs native path) and the viewer's web-blob/native cache-download now live there; screens call typed methods only. Driver onboarding/vehicle/apply route through `driverApi`. No API change.
 * **Problems / Notes:** None.
 
 #### US-202: Driver Pending Validation Screen
@@ -191,6 +196,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
   * Mobile API Client: [mobile/lib/api/driver.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/api/driver.ts)
 * **Details & Status:** Fully implemented on backend and mobile. Features online/offline switch toggle (with green `#00C853` indicator), configurable commission debt threshold validation (200.00 MAD), daily earnings computation, active trip shortcut card, interactive cross-platform `MapRenderer`, and feature test coverage.
 * **Phase A W1:** Dashboard swept to semantic classes (CTA → `bg-primary-800`, per-card elevation → Tailwind shadows). No feature change.
+* **Phase A W6:** Dashboard reads `driverApi` under canonical `queryKeys.driver.dashboard` (10s poll retained); `nearbyDrivers` placeholder + `verificationStatus` (`/me` → `driver_profile`) added to `lib/api/driver.ts`. No API change.
 * **Problems / Notes:** None.
 
 #### US-205: Driver Profile Screen
@@ -198,9 +204,10 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Summary:** Display driver profile details, vehicle specifications, average rating, and verification badge.
 * **Related Files:**
   * Spec: [dev/epic-02-driver-onboarding-and-verification/us-205-driver-profile-screen/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-02-driver-onboarding-and-verification/us-205-driver-profile-screen/README.md)
-  * Mobile Screen: [mobile/app/driver/profile.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/profile.tsx)
+  * Mobile Screen: [mobile/app/(driver)/profile.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/(driver)/profile.tsx)
   * Backend Resource: [backend/app/Http/Resources/DriverProfileResource.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Resources/DriverProfileResource.php)
 * **Details & Status:** Profile screen displays verified status badge, total completed trips, vehicle details (make, plate, capacity), and document status.
+* **Phase A W6:** Driver profile screen moved (W5) to `app/(driver)/profile.tsx` and now loads via typed `authApi.me()` + `driverApi.getProfile()` (typed `DriverProfileItem`). No API change.
 * **Problems / Notes:** None.
 
 ---
@@ -222,6 +229,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Details & Status:** Fully implemented on backend and mobile. Features draft creation (`POST /api/v1/requests`), step-by-step state saving (`PATCH /api/v1/requests/{id}`), S3 batch presigned upload URLs (`POST /api/v1/requests/{id}/photos/presigned-urls`), photo confirmation (`POST /api/v1/requests/{id}/photos/confirm`), split-screen Google Map trajectory polyline, vehicle cards (Moto, Triporteur, Fourgonnette, Camion), proposed price controls with 20 MAD minimum floor banner, and publish action (`POST /api/v1/requests/{id}/publish`).
 * **Phase A W1:** Largest conversion — `mobile/app/requests/create.tsx` full StyleSheet → classes (animated sheet keepalive to Tailwind + inline animated `top`/`bottom` whitelisted); map component split-screen geometry converted. No feature change.
 * **Phase A W3:** Package-photo camera path in `create.tsx` re-gated through `useCameraPermission('request-package-photos')` (granted → launch; denied → French explanation + retry; permanently denied → message + "Ouvrir les réglages", never re-opens the native dialog). Gallery path unchanged. No feature/API change.
+* **Phase A W6:** Wizard photo step keeps using `requestsApi` presigned/confirm calls; the raw blob + presigned-PUT fetches moved to `lib/api/files.ts` (`fileUriToBlob`/`putToSignedUrl`). No API change.
 * **Problems / Notes:** None.
 
 #### US-302: Google Maps / Places Autocomplete & Geocoding
@@ -269,6 +277,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
   * Mobile Screens: [mobile/app/driver/marketplace/index.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/marketplace/index.tsx), [mobile/app/driver/marketplace/[id].tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/marketplace/[id].tsx)
 * **Details & Status:** Complete bidding API and mobile UI. Drivers can submit custom amounts or quick bid buttons (+10%, +20% of target price).
 * **Phase A W1:** Marketplace feed + detail screens swept to semantic classes; STATUS maps → class maps on request detail. No feature change.
+* **Phase A W6:** `marketplace/index.tsx` now drives the shared `useBrowseRequests` hook (canonical keys) and `marketplace/[id].tsx` resolves via `requestsApi.getForDriver(id)` under `queryKeys.requests.detailForDriver(id)` — the old page-1 `.find()` hack is gone from the screen (real-mode fallback documented in the module until B2). Feed mock seam (`subscribeLiveFeed`) + `nearbyRequests` fakes are ready for the US-401 feed (W9/W10). No API change.
 * **Problems / Notes:** None.
 
 #### US-402: Client Realtime Offer Stream & Acceptance / Locking

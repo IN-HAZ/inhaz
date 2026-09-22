@@ -3,7 +3,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, MapPin, DollarSign, Clock, Package } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { requestsApi } from '@/lib/api/requests';
 import { offersApi, BrowseRequest } from '@/lib/api/offers';
+import { queryKeys } from '@/lib/api/queryKeys';
 import { getErrorMessage } from '@/lib/api/errors';
 
 export default function RequestDetailScreen() {
@@ -14,19 +16,16 @@ export default function RequestDetailScreen() {
   const [message, setMessage] = useState('');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['browse-detail', id],
-    queryFn: async () => {
-      const result = await offersApi.browse(1);
-      return result.requests.find((r) => r.id === Number(id)) || null;
-    },
+    queryKey: queryKeys.requests.detailForDriver(Number(id)),
+    queryFn: () => requestsApi.getForDriver(Number(id)),
     enabled: !!id,
   });
 
   const offerMutation = useMutation({
     mutationFn: () => offersApi.createOffer(Number(id), Number(price), message || undefined),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['browse'] });
-      Alert.alert('Succ\u00e8s', 'Votre offre a \u00e9t\u00e9 soumise', [
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.browse() });
+      Alert.alert('Succès', 'Votre offre a été soumise', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     },

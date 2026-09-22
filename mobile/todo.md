@@ -599,7 +599,7 @@ Echo/Pusher dependencies exist but are not wired into the application.
 -   [ ] Implement the Echo connection + subscription infra in
     `lib/api/echo.ts` (single-connection singleton) against a swappable
     event-stream interface.
--   [ ] Phase A wires the interface to a mock event source
+-   [x] Phase A wires the interface to a mock event source
     (`lib/api/mock/realtime.ts`: timer-driven realistic fake events,
     env-flag toggled, never inline).
 -   [ ] Swapping to real Laravel broadcasts is a Phase B change (B8):
@@ -633,6 +633,13 @@ TanStack Query cache
       └── max-3 bottom list
 ```
 
+> W6 2026-09-22: the swappable event interface + mock source landed early as
+> `lib/api/feed.ts` (`subscribeLiveFeed`, env-flag toggled) + `lib/api/mock/feed.ts`
+> (timer-driven fake events, ~12s cadence) — file name differs from the fiche's
+> `mock/realtime.ts`; nothing calls it yet (W9 home / W10 hook wiring). Unticked:
+> Echo/pusher-js singleton (`lib/api/echo.ts` stays dead until Phase B B8) and all
+> subscribe/unsubscribe/cache bullets (W10).
+
 ------------------------------------------------------------------------
 
 ## 11. Driver request interaction
@@ -640,9 +647,9 @@ TanStack Query cache
 -   [ ] Tap map marker → open request detail.
 -   [ ] Tap bottom-list item → open request detail.
 -   [ ] Show request details.
--   [ ] Fetch detail via a `getForDriver` API method — mock-backed in
+-   [x] Fetch detail via a `getForDriver` API method — mock-backed in
     Phase A; real driver-accessible endpoint is backend ticket B2.
--   [ ] Replace the current `marketplace/[id].tsx` page-1 `.find()` hack
+-   [x] Replace the current `marketplace/[id].tsx` page-1 `.find()` hack
     when the backend detail endpoint is available (ticket B2).
 -   [ ] Allow counter-offer when driver is eligible.
 -   [ ] Allow direct acceptance when supported by the backend.
@@ -651,6 +658,13 @@ TanStack Query cache
 -   [ ] Prevent actions when driver verification is not approved.
 -   [ ] Handle request becoming unavailable while the driver is viewing
     it.
+
+> W6 2026-09-22: `requestsApi.getForDriver(id)` shipped (mock-backed
+> `mockRequestDetailForDriver`; real mode falls back to the browse list until
+> B2 — that fallback now lives in the module, not the screen). The
+> `marketplace/[id].tsx` page-1 `.find()` hack is gone; it calls
+> `getForDriver` under `queryKeys.requests.detailForDriver(id)`. Unticked:
+> counter-offer/direct-acceptance action flows (W7+).
 
 ------------------------------------------------------------------------
 
@@ -677,7 +691,7 @@ TanStack Query cache
 
 ## 13. Data/cache architecture
 
--   [ ] Define stable React Query keys for:
+-   [x] Define stable React Query keys for:
     -   current user
     -   driver profile/status
     -   nearby drivers
@@ -687,7 +701,7 @@ TanStack Query cache
     -   offers
     -   trips
 -   [ ] Update cache directly for realtime events where possible.
--   [ ] Invalidate authoritative queries after mutations.
+-   [x] Invalidate authoritative queries after mutations.
 -   [ ] Avoid unnecessary polling where WebSocket events provide
     equivalent updates.
 -   [ ] Keep polling for data that does not have realtime events yet.
@@ -695,29 +709,59 @@ TanStack Query cache
     screens.
 
 ------------------------------------------------------------------------
+> W6 2026-09-22: canonical keys live in `lib/api/queryKeys.ts` (`queryKeys.*`)
+> with a header inventory; all hooks (`useDriverDashboard`, `useDeliveryRequests`,
+> `useRequestDetail`, `useBrowseRequests`, `useTripDetails`,
+> `useDriverTrips`/`useClientTrips`) and screen-level queries (`trips/index`,
+> `marketplace/index` via the shared `useBrowseRequests` hook) now derive keys
+> from it. Mutation `onSuccess` handlers invalidate via those keys (offers/trips
+> transitions, dashboard toggles). Unticked: realtime cache updates (§10 wires
+> `subscribeLiveFeed` → cache in W9/W10) and polling-reduction trade-offs
+> (behavioral).
+
+------------------------------------------------------------------------
 
 ## 14. API consistency
 
--   [ ] Move direct `apiClient` calls from screens into typed API
+-   [x] Move direct `apiClient` calls from screens into typed API
     modules (`lib/api/auth.ts`, `lib/api/documents.ts`, `lib/api/driver.ts`,
     `lib/api/requests.ts`).
--   [ ] Complete missing driver/document API types.
--   [ ] Add API methods for new onboarding/role endpoints.
--   [ ] Add API methods for nearby drivers/requests as placeholders —
+-   [x] Complete missing driver/document API types.
+-   [x] Add API methods for new onboarding/role endpoints.
+-   [x] Add API methods for nearby drivers/requests as placeholders —
     mock-backed in Phase A, real endpoints in Phase B (B3/B4).
--   [ ] Add API methods for verification status (`/me` → `driver_profile`).
--   [ ] Add API methods for profile photo upload — mock-backed until
+-   [x] Add API methods for verification status (`/me` → `driver_profile`).
+-   [x] Add API methods for profile photo upload — mock-backed until
     backend endpoint exists (B5).
--   [ ] Add API methods for request acceptance/counter-offers as
+-   [x] Add API methods for request acceptance/counter-offers as
     required.
--   [ ] Add a `getForDriver` request-detail method — mock-backed until
+-   [x] Add a `getForDriver` request-detail method — mock-backed until
     backend permission exists (B2).
--   [ ] Create `lib/api/mock/*`: typed fakes for nearbyDrivers,
+-   [x] Create `lib/api/mock/*`: typed fakes for nearbyDrivers,
     nearbyRequests, realtime feed, photo upload, requestDetail — all
     behind the `EXPO_PUBLIC_USE_MOCK` flag; each typed module branches
     real-vs-mock at exactly one seam.
--   [ ] Keep backend response types explicit.
--   [ ] Use `getErrorMessage()` consistently.
+-   [x] Keep backend response types explicit.
+-   [x] Use `getErrorMessage()` consistently.
+
+------------------------------------------------------------------------
+> W6 2026-09-22: screens hold zero direct HTTP — `grep apiClient|fetch( app/`
+> returns nothing. Typed modules: `auth.ts` (sendOtp/verifyOtp/me/updateProfile/
+> switchRole/logout — store `checkAuth`/`logout` also route through it),
+> `documents.ts` (list/upload/view; `getView` encapsulates web blob + native
+> FileSystem cache download, replacing the viewer's raw fetch), `driver.ts`
+> (apply/getProfile/saveVehicle/verificationStatus/nearbyDrivers),
+> `requests.ts` (+ `getForDriver`, `browseWithGeo`), `uploads.ts` (profile
+> photo, mock), `feed.ts` (`subscribeLiveFeed`, mock). `files.ts` holds
+> `fileUriToBlob`/`putToSignedUrl` so the create-wizard presigned PUT and
+> blob conversions leave `app/`. Mock fakes in `lib/api/mock/*` (typed,
+> env-flag only) — `EXPO_PUBLIC_USE_MOCK=false` default added to `.env(.example)`.
+> `marketplace/index` now uses the shared `useBrowseRequests` hook; driver
+> request detail uses `requestsApi.getForDriver` (real mode still falls back to
+> browse until B2 — noted in the module). Unticked: acceptance/counter-offer
+> UI flows (W7+); `lib/api/echo.ts` stays dead — realtime lands via
+> `lib/api/feed.ts` in W9/W10 (fiche §10b ticked; Echo wiring deferred).
+> ⚠️ mock-feature visual checks pending emulator.
 
 ------------------------------------------------------------------------
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { tokenStorage } from "@/lib/storage/secureStore";
-import { apiClient, setAuthToken, onUnauthenticated } from "@/lib/api/client";
+import { setAuthToken, onUnauthenticated } from "@/lib/api/client";
+import { authApi } from "@/lib/api/auth";
 
 const TOKEN_KEY = "auth_token";
 
@@ -98,8 +99,7 @@ export const useAuthStore = create<AuthState>((set) => ({
                 return;
             }
             setAuthToken(token);
-            const response = await apiClient.get("/me");
-            const user = response.data.user as User;
+            const user = await authApi.me();
             set({ user: normalizeUser(user), isAuthenticated: true, isLoading: false });
         } catch {
             setAuthToken(null);
@@ -120,7 +120,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     logout: async () => {
         try {
-            await apiClient.post("/auth/logout");
+            await authApi.logout();
         } catch {
             // Silent fail
         } finally {

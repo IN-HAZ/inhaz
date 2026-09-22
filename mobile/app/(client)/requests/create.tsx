@@ -20,6 +20,7 @@ import * as Location from 'expo-location';
 import { RequestMap } from '@/components/map/variants/RequestMap';
 import type { BaseMapHandle as MapRendererHandle, RouteMarker, MapPoint, Region } from '@/components/map/core/BaseMapTypes';
 import { requestsApi } from '@/lib/api/requests';
+import { fileUriToBlob, putToSignedUrl } from '@/lib/api/files';
 import { getPlaceDetails, reverseGeocode, PlaceSearchResult } from '@/lib/api/geocoding';
 import { getErrorMessage } from '@/lib/api/errors';
 
@@ -465,7 +466,10 @@ export default function CreateRequestScreen() {
       const list = await requestsApi.getPresignedUrls(draftId, [{ filename: item.fileName, content_type: 'image/jpeg' }]);
       if (!list?.length) throw new Error();
       const { photo_key, upload_url } = list[0];
-      try { const b = await fetch(item.uri).then((r) => r.blob()); await fetch(upload_url, { method: 'PUT', body: b, headers: { 'Content-Type': 'image/jpeg' } }); } catch {}
+      try {
+        const blob = await fileUriToBlob(item.uri);
+        await putToSignedUrl(upload_url, blob, 'image/jpeg');
+      } catch {}
       await requestsApi.confirmPhoto(draftId, photo_key);
       setPhotos((prev) => prev.map((p) => p.id === item.id ? { ...p, status: 'uploaded', photoKey: photo_key } : p));
     } catch {

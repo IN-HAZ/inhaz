@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { apiClient } from '@/lib/api/client';
+import { documentsApi } from '@/lib/api/documents';
 import { useToast } from '@/components/ui/ToastProvider';
 import { getErrorMessage } from '@/lib/api/errors';
 import { ArrowLeft, Upload, Check } from 'lucide-react-native';
@@ -31,8 +31,8 @@ export default function DocumentUploadScreen() {
 
   const fetchExistingDocuments = async () => {
     try {
-      const response = await apiClient.get('/driver/documents');
-      const types = new Set<string>(response.data.documents.map((d: any) => d.type));
+      const docs = await documentsApi.list();
+      const types = new Set<string>(docs.map((d) => d.type));
       setExistingTypes(types);
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -64,23 +64,10 @@ export default function DocumentUploadScreen() {
 
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('type', selectedType);
-
-      if (file.uri.startsWith('data:') || file.uri.startsWith('blob:')) {
-        const resp = await fetch(file.uri);
-        const blob = await resp.blob();
-        formData.append('file', blob, file.name);
-      } else {
-        formData.append('file', {
-          uri: file.uri,
-          name: file.name,
-          type: file.mimeType,
-        } as any);
-      }
-
-      await apiClient.post('/driver/documents', formData, {
-        headers: { 'Content-Type': undefined },
+      await documentsApi.upload(selectedType, {
+        uri: file.uri,
+        name: file.name,
+        mimeType: file.mimeType,
       });
 
       toast.success('Document téléchargé avec succès');

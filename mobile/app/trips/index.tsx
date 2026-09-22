@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Package, ChevronRight } from 'lucide-react-native';
 import { tripsApi, TripItem, getStatusLabel } from '@/lib/api/trips';
+import { queryKeys } from '@/lib/api/queryKeys';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useRole } from '@/lib/store/auth';
 
@@ -22,7 +23,7 @@ export default function TripsScreen() {
   const { isDriver } = useRole();
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
-    queryKey: ['trips', isDriver ? 'driver' : 'client'],
+    queryKey: queryKeys.trips.list(isDriver ? 'driver' : 'client'),
     queryFn: () => isDriver ? tripsApi.driverTrips() : tripsApi.clientTrips(),
   });
 

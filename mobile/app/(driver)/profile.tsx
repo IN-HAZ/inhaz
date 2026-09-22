@@ -1,20 +1,12 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { apiClient } from '@/lib/api/client';
+import { authApi } from '@/lib/api/auth';
+import { driverApi, DriverProfileItem } from '@/lib/api/driver';
 import { useAuthStore } from '@/lib/store/auth';
 import { useToast } from '@/components/ui/ToastProvider';
 import { getErrorMessage } from '@/lib/api/errors';
 import { ArrowLeft, LogOut, ChevronRight, FileText, Car, Check, Clock, X as XIcon, Eye } from 'lucide-react-native';
-
-interface DriverProfile {
-  id: number;
-  status: string;
-  approved_at: string | null;
-  rejection_reason: string | null;
-  vehicle: { brand: string; model: string; registration_number: string } | null;
-  documents: { id: number; type: string; status: string }[];
-}
 
 const docLabels: Record<string, string> = {
   CIN: 'CIN',
@@ -24,7 +16,7 @@ const docLabels: Record<string, string> = {
 };
 
 export default function DriverProfileScreen() {
-  const [profile, setProfile] = useState<DriverProfile | null>(null);
+  const [profile, setProfile] = useState<DriverProfileItem | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { user, logout, setUser } = useAuthStore();
@@ -36,16 +28,12 @@ export default function DriverProfileScreen() {
 
   const fetchData = async () => {
     try {
-      const [meRes, profileRes] = await Promise.all([
-        apiClient.get('/me'),
-        apiClient.get('/driver/profile').catch(() => null),
+      const [meUser, profile] = await Promise.all([
+        authApi.me(),
+        driverApi.getProfile().catch(() => null),
       ]);
-      if (meRes.data.user) {
-        setUser(meRes.data.user);
-      }
-      if (profileRes?.data?.driver_profile) {
-        setProfile(profileRes.data.driver_profile);
-      }
+      setUser(meUser);
+      setProfile(profile);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, TextInput, TouchableOpacity, Text, KeyboardAvoidingView, Platform } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { apiClient } from "@/lib/api/client";
+import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/store/auth";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getErrorMessage } from "@/lib/api/errors";
@@ -26,19 +26,16 @@ export default function OtpScreen() {
     setLoading(true);
 
     try {
-      const response = await apiClient.post("/auth/verify-otp", {
-        phone,
-        code: validation.data,
-      });
+      const grant = await authApi.verifyOtp(phone, validation.data);
 
-      if (response.data.user && response.data.token) {
-        await setSession(response.data.user, response.data.token);
+      if (grant.user && grant.token) {
+        await setSession(grant.user, grant.token);
         toast.success("Connexion réussie !");
         // `verify-otp` does not load `driver_profile`; refresh once from `/me`
         // so role routing sees the real persona (W5 §5.1).
-        const meUser = await apiClient.get('/me').catch(() => null);
-        if (meUser?.data?.user) setUser(meUser.data.user);
-        const u = meUser?.data?.user ?? response.data.user;
+        const meUser = await authApi.me().catch(() => null);
+        if (meUser) setUser(meUser);
+        const u = meUser ?? grant.user;
         const incomplete = !u.name && !u.customer_profile?.name;
         const isDriver = u.role === 'driver' || !!u.driver_profile;
         // W7: incomplete persona → /auth/role-choice instead of a home screen.

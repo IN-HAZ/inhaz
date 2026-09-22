@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, TextInput, TouchableOpacity, Text, KeyboardAvoidingView, Platform } from "react-native";
 import { router } from "expo-router";
-import { apiClient } from "@/lib/api/client";
+import { authApi } from "@/lib/api/auth";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getErrorMessage } from "@/lib/api/errors";
 import { phoneSchema } from "@/lib/validation/auth";
@@ -23,7 +23,7 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      await apiClient.post("/auth/send-otp", { phone: sanitizedPhone });
+      await authApi.sendOtp(sanitizedPhone);
       toast.success("Code OTP envoyé. Vérifiez votre email (Mailpit).");
       router.push({ pathname: "/auth/otp", params: { phone: sanitizedPhone } });
     } catch (e: any) {

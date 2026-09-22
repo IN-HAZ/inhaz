@@ -1,15 +1,8 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { apiClient } from '@/lib/api/client';
+import { documentsApi, DriverDocument } from '@/lib/api/documents';
 import { ArrowLeft, FileText, Plus, Eye, Check, Clock, X, CheckCircle } from 'lucide-react-native';
-
-interface Document {
-  id: number;
-  type: string;
-  status: string;
-  expires_at: string | null;
-}
 
 const REQUIRED_DOCS = ['CIN', 'REGISTRATION', 'INSURANCE', 'DRIVING_LICENSE'];
 
@@ -21,7 +14,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function DocumentListScreen() {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DriverDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -33,8 +26,7 @@ export default function DocumentListScreen() {
 
   const fetchDocuments = async () => {
     try {
-      const response = await apiClient.get('/driver/documents');
-      setDocuments(response.data.documents);
+      setDocuments(await documentsApi.list());
     } catch (error) {
       console.error('Error fetching documents:', error);
     } finally {

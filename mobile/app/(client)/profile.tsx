@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { apiClient } from '@/lib/api/client';
+import { authApi } from '@/lib/api/auth';
 import { useAuthStore, useRole } from '@/lib/store/auth';
 import { useToast } from '@/components/ui/ToastProvider';
 import { getErrorMessage } from '@/lib/api/errors';
@@ -92,11 +92,11 @@ export default function ClientProfileScreen() {
     }
     setSaving(true);
     try {
-      const res = await apiClient.put('/me', { name: name.trim(), email: email.trim() || null });
-      if (res.data.user) {
-        setUser(res.data.user);
-        setName(res.data.user.customer_profile?.name || res.data.user.name || '');
-        setEmail(res.data.user.customer_profile?.email || '');
+      const res = await authApi.updateProfile({ name: name.trim(), email: email.trim() || null });
+      if (res) {
+        setUser(res);
+        setName(res.customer_profile?.name || res.name || '');
+        setEmail(res.customer_profile?.email || '');
       }
       toast.success('Profil enregistré');
       setEditing(false);

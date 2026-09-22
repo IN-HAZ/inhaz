@@ -1,18 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { tripsApi, TripItem, Waypoint } from "@/lib/api/trips";
+import { queryKeys } from "@/lib/api/queryKeys";
 
 export function useTripDetail(id: number) {
   const queryClient = useQueryClient();
 
   const tripQuery = useQuery({
-    queryKey: ["trips", "detail", id],
+    queryKey: queryKeys.trips.detail(id),
     queryFn: () => tripsApi.get(id),
     enabled: !!id,
     refetchInterval: 5000,
   });
 
   const waypointsQuery = useQuery({
-    queryKey: ["trips", "waypoints", id],
+    queryKey: queryKeys.trips.waypoints(id),
     queryFn: () => tripsApi.waypoints(id),
     enabled: !!id,
   });
@@ -20,19 +21,19 @@ export function useTripDetail(id: number) {
   const transitionMutation = useMutation({
     mutationFn: (status: string) => tripsApi.transition(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["trips", "detail", id] });
-      queryClient.invalidateQueries({ queryKey: ["trips", "waypoints", id] });
-      queryClient.invalidateQueries({ queryKey: ["trips", "list"] });
-      queryClient.invalidateQueries({ queryKey: ["driver", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips.waypoints(id) });
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.driver.dashboard });
     },
   });
 
   const cancelMutation = useMutation({
     mutationFn: (reason: string) => tripsApi.cancel(id, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["trips", "detail", id] });
-      queryClient.invalidateQueries({ queryKey: ["trips", "list"] });
-      queryClient.invalidateQueries({ queryKey: ["driver", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips.detail(id) });
+      queryClient.invalidateQueries({ queryKey: ["trips"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.driver.dashboard });
     },
   });
 
@@ -40,7 +41,7 @@ export function useTripDetail(id: number) {
     mutationFn: ({ score, comment }: { score: number; comment?: string }) =>
       tripsApi.rate(id, score, comment),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["trips", "detail", id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips.detail(id) });
     },
   });
 
@@ -66,7 +67,7 @@ export function useTripDetail(id: number) {
 
 export function useDriverTrips(page = 1) {
   const query = useQuery({
-    queryKey: ["trips", "driver", page],
+    queryKey: queryKeys.trips.list("driver", page),
     queryFn: () => tripsApi.driverTrips(page),
   });
 
@@ -82,7 +83,7 @@ export function useDriverTrips(page = 1) {
 
 export function useClientTrips(page = 1) {
   const query = useQuery({
-    queryKey: ["trips", "client", page],
+    queryKey: queryKeys.trips.list("client", page),
     queryFn: () => tripsApi.clientTrips(page),
   });
 

@@ -2,8 +2,8 @@ import { View, Text, TouchableOpacity, FlatList, TextInput, ActivityIndicator, R
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Search, MapPin, Package, ChevronRight, DollarSign } from 'lucide-react-native';
-import { useQuery } from '@tanstack/react-query';
-import { offersApi, BrowseRequest } from '@/lib/api/offers';
+import { useBrowseRequests } from '@/lib/hooks/useDeliveryRequests';
+import { BrowseRequest } from '@/lib/api/offers';
 import { getErrorMessage } from '@/lib/api/errors';
 
 export default function MarketplaceScreen() {
@@ -11,10 +11,14 @@ export default function MarketplaceScreen() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
-  const { data, isLoading, error, refetch, isRefetching } = useQuery({
-    queryKey: ['browse', page, search],
-    queryFn: () => offersApi.browse(page, search ? { search } : undefined),
-  });
+  const {
+    requests,
+    pagination,
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+  } = useBrowseRequests(page, search ? { search } : undefined);
 
   const renderItem = ({ item }: { item: BrowseRequest }) => {
     const pickup = item.stops?.find((s) => s.type === 'PICKUP');
@@ -106,20 +110,20 @@ export default function MarketplaceScreen() {
             <Text className="text-white font-semibold text-sm">R\u00e9essayer</Text>
           </TouchableOpacity>
         </View>
-      ) : data?.requests.length === 0 ? (
+      ) : requests.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <Package size={48} color="#D1D5DB" />
           <Text className="text-gray-500 mt-4 text-center text-sm">Aucune demande disponible</Text>
         </View>
       ) : (
         <FlatList
-          data={data?.requests || []}
+          data={requests}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerClassName="py-4"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#4B2861" />}
           onEndReached={() => {
-            if (data?.pagination && page < data.pagination.last_page) {
+            if (pagination && page < pagination.last_page) {
               setPage((p) => p + 1);
             }
           }}

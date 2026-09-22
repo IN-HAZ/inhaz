@@ -1,17 +1,15 @@
 import { useCallback, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { apiClient } from '../../lib/api/client';
+import { authApi } from '../../lib/api/auth';
+import { driverApi, DriverProfileItem } from '../../lib/api/driver';
 import { useAuthStore } from '../../lib/store/auth';
 import { useToast } from '../../components/ui/ToastProvider';
 import { getErrorMessage } from '../../lib/api/errors';
 import { X, Banknote, Clock, Shield, ChevronRight, FileText, Check, Eye, Upload } from 'lucide-react-native';
 
-interface DriverData {
-  status: string;
-  vehicle: { brand: string; model: string; registration_number: string } | null;
-  documents: { id: number; type: string; status: string }[];
-}
+/** Onboarding state = the authoritative driver profile shape. */
+type DriverData = DriverProfileItem;
 
 const REQUIRED_DOCS = ['CIN', 'REGISTRATION', 'INSURANCE', 'DRIVING_LICENSE'];
 
@@ -39,18 +37,17 @@ export default function DriverOnboardingScreen() {
 
   const loadExistingData = async () => {
     try {
-      const [meRes, profileRes] = await Promise.all([
-        apiClient.get('/me'),
-        apiClient.get('/driver/profile').catch(() => null),
+      const [meUser, profile] = await Promise.all([
+        authApi.me(),
+        driverApi.getProfile().catch(() => null),
       ]);
 
-      const u = meRes.data.user;
-      setUser(u);
-      setName(u.customer_profile?.name || u.name || '');
-      setEmail(u.customer_profile?.email || u.email || '');
+      setUser(meUser);
+      setName(meUser.customer_profile?.name || meUser.name || '');
+      setEmail(meUser.customer_profile?.email || '');
 
-      if (profileRes?.data?.driver_profile) {
-        const dp = profileRes.data.driver_profile;
+      if (profile) {
+        const dp = profile;
         setDriverData(dp);
 
         if (dp.vehicle) {
@@ -98,13 +95,13 @@ export default function DriverOnboardingScreen() {
   const handleApply = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.post('/driver/apply');
-      const dp = response.data.driver_profile;
+      const response = await driverApi.apply();
+      const dp = response.driver_profile;
       setDriverData(dp);
       setStep(2);
     } catch (error: any) {
       if (error.response?.status === 422) {
-        const dp = error.response.data.driver_profile;
+        const dp = error.response.data.driver_profile as DriverProfileItem;
         if (dp) setDriverData(dp);
         setStep(2);
       } else {
@@ -122,7 +119,7 @@ export default function DriverOnboardingScreen() {
     }
     setLoading(true);
     try {
-      await apiClient.put('/me', { name: name.trim(), email: email.trim() || null });
+      await authApi.updateProfile({ name: name.trim(), email: email.trim() || null });
       toast.success('Profil enregistré');
       const done = doneSteps();
       done.add(2);
@@ -142,14 +139,14 @@ export default function DriverOnboardingScreen() {
     }
     setLoading(true);
     try {
-      const res = await apiClient.post('/driver/vehicle', {
+      const vehicle = await driverApi.saveVehicle({
         brand: brand.trim(),
         model: model.trim(),
         registration_number: registrationNumber.trim(),
       });
       setDriverData((prev) => ({
-        ...(prev || { status: 'PENDING', vehicle: null, documents: [] }),
-        vehicle: res.data.vehicle,
+        ...(prev || { status: 'PENDING', vehicle: null, documents: [], id: 0, approved_at: null, rejection_reason: null }),
+        vehicle,
       }));
       toast.success('Véhicule enregistré');
       setStep(4);

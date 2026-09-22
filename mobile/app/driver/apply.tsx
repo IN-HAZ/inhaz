@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { apiClient } from '../../lib/api/client';
+import { driverApi } from '../../lib/api/driver';
 import { useAuthStore } from '../../lib/store/auth';
 import { useToast } from '../../components/ui/ToastProvider';
 import { getErrorMessage } from '../../lib/api/errors';
@@ -16,8 +16,8 @@ export default function DriverApplyScreen() {
   const handleApply = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.post('/driver/apply');
-      setUser(response.data.user);
+      const response = await driverApi.apply();
+      if (response.user) setUser(response.user);
       router.replace('/driver/onboarding');
     } catch (error: any) {
       if (error.response?.status === 422) {
