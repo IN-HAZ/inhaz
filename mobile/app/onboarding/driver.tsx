@@ -1,18 +1,25 @@
 import { useCallback, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { authApi } from '../../lib/api/auth';
-import { driverApi, DriverProfileItem } from '../../lib/api/driver';
-import { useAuthStore } from '../../lib/store/auth';
-import { useToast } from '../../components/ui/ToastProvider';
-import { getErrorMessage } from '../../lib/api/errors';
-import { X, Banknote, Clock, Shield, ChevronRight, FileText, Check, Eye, Upload } from 'lucide-react-native';
+import { authApi } from '@/lib/api/auth';
+import { driverApi, DriverProfileItem } from '@/lib/api/driver';
+import { useAuthStore } from '@/lib/store/auth';
+import { useToast } from '@/components/ui/ToastProvider';
+import { useProfilePhoto } from '@/lib/hooks/useProfilePhoto';
+import { getErrorMessage } from '@/lib/api/errors';
+import { X, Banknote, Clock, Shield, ChevronRight, FileText, Check, Eye, Camera } from 'lucide-react-native';
 
 /** Onboarding state = the authoritative driver profile shape. */
 type DriverData = DriverProfileItem;
 
 const REQUIRED_DOCS = ['CIN', 'REGISTRATION', 'INSURANCE', 'DRIVING_LICENSE'];
 
+/**
+ * Driver onboarding (W7 §6.4). Lives in `app/onboarding/` (outside the role
+ * groups) so it runs before a `driver_profile` exists. Reuses the real backend
+ * apply/profile/vehicle/document endpoints; `color` and the profile photo are
+ * Phase B extras sent as extra fields / through the mock seam.
+ */
 export default function DriverOnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
@@ -23,7 +30,10 @@ export default function DriverOnboardingScreen() {
   const [email, setEmail] = useState('');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
+  const [color, setColor] = useState('');
   const [registrationNumber, setRegistrationNumber] = useState('');
+
+  const photo = useProfilePhoto('driver-avatar');
 
   const router = useRouter();
   const { setUser } = useAuthStore();
@@ -54,6 +64,7 @@ export default function DriverOnboardingScreen() {
           setBrand(dp.vehicle.brand || '');
           setModel(dp.vehicle.model || '');
           setRegistrationNumber(dp.vehicle.registration_number || '');
+          setColor(dp.vehicle.color || '');
         }
 
         const nextIncomplete = findNextIncomplete(dp);
@@ -121,6 +132,15 @@ export default function DriverOnboardingScreen() {
     try {
       await authApi.updateProfile({ name: name.trim(), email: email.trim() || null });
       toast.success('Profil enregistré');
+
+      // Photo is best-effort until the backend photo endpoint ships (B5).
+      if (photo.hasPhoto) {
+        const uploaded = await photo.upload();
+        if (!uploaded) {
+          toast.warning('Photo de profil non synchronisée pour le moment (B5).');
+        }
+      }
+
       const done = doneSteps();
       done.add(2);
       const next = findNextStep(done);
@@ -143,6 +163,8 @@ export default function DriverOnboardingScreen() {
         brand: brand.trim(),
         model: model.trim(),
         registration_number: registrationNumber.trim(),
+        // Extra field — backend `color` column is ticket B6, ignored for now.
+        color: color.trim() || undefined,
       });
       setDriverData((prev) => ({
         ...(prev || { status: 'PENDING', vehicle: null, documents: [], id: 0, approved_at: null, rejection_reason: null }),
@@ -157,8 +179,10 @@ export default function DriverOnboardingScreen() {
     }
   };
 
+  // W7 §6.4: after finishing, land on the driver home — the verification
+  // banner lives there and explains the manual-review state (§6.5).
   const handleFinish = () => {
-    router.replace('/driver/profile');
+    router.replace('/(driver)');
   };
 
   const findNextStep = (done: Set<number>): number => {
@@ -202,7 +226,7 @@ export default function DriverOnboardingScreen() {
           onPress={handleFinish}
           className="bg-primary-800 rounded-2xl py-4 px-12 items-center"
         >
-          <Text className="text-white font-semibold text-base">Voir mon profil</Text>
+          <Text className="text-white font-semibold text-base">Accéder à mon espace</Text>
         </TouchableOpacity>
       </View>
     );
@@ -320,6 +344,22 @@ export default function DriverOnboardingScreen() {
               <Text className="text-gray-500 text-base">Complétez votre profil pour continuer.</Text>
             </View>
 
+            {/* Profile photo (optional, preview only until B5) */}
+            <View className="items-center mb-6">
+              <TouchableOpacity
+                onPress={photo.chooseSource}
+                activeOpacity={0.85}
+                className="w-24 h-24 rounded-full bg-primary-100 items-center justify-center border-4 border-white shadow-sm shadow-primary-800/10"
+              >
+                {photo.hasPhoto ? (
+                  <Image source={{ uri: photo.photo.uri as string }} className="w-full h-full rounded-full" />
+                ) : (
+                  <Camera size={26} color="#4B2861" />
+                )}
+              </TouchableOpacity>
+              <Text className="text-gray-400 text-xs mt-2">Ajouter une photo (optionnel)</Text>
+            </View>
+
             <View className="space-y-5">
               <View>
                 <Text className="text-sm font-semibold text-gray-700 mb-2">Nom complet</Text>
@@ -381,6 +421,12 @@ export default function DriverOnboardingScreen() {
                 <Text className="text-sm font-semibold text-gray-700 mb-2">Modèle</Text>
                 <TextInput value={model} onChangeText={setModel} placeholder="Corolla" placeholderTextColor="#9CA3AF"
                   className="border border-gray-200 rounded-2xl px-4 py-3.5 text-base text-gray-900 bg-gray-50" />
+              </View>
+              <View>
+                <Text className="text-sm font-semibold text-gray-700 mb-2">Couleur</Text>
+                <TextInput value={color} onChangeText={setColor} placeholder="Noir" placeholderTextColor="#9CA3AF"
+                  className="border border-gray-200 rounded-2xl px-4 py-3.5 text-base text-gray-900 bg-gray-50" />
+                <Text className="text-gray-400 text-xs mt-1.5">Optionnel — champ backend en cours (B6)</Text>
               </View>
               <View>
                 <Text className="text-sm font-semibold text-gray-700 mb-2">Immatriculation</Text>

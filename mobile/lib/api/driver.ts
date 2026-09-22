@@ -23,7 +23,13 @@ export interface DriverProfileItem {
   status: string;
   approved_at: string | null;
   rejection_reason: string | null;
-  vehicle: { brand: string; model: string; registration_number: string } | null;
+  vehicle: {
+    brand: string;
+    model: string;
+    registration_number: string;
+    /** Backend column is ticket B6; sent as an extra field, not returned yet. */
+    color?: string;
+  } | null;
   documents: { id: number; type: string; status: string }[];
 }
 
@@ -83,7 +89,9 @@ export const driverApi = {
     brand: string;
     model: string;
     registration_number: string;
-  }): Promise<{ brand: string; model: string; registration_number: string }> => {
+    /** Extra field — backend `color` column is ticket B6 (ignored for now). */
+    color?: string;
+  }): Promise<{ brand: string; model: string; registration_number: string; color?: string }> => {
     const response = await apiClient.post<{ vehicle: DriverProfileItem["vehicle"] }>(
       "/driver/vehicle",
       vehicle

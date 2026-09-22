@@ -1,7 +1,7 @@
 # inHAZ — User Stories & Implementation Status Matrix
 
 **Repository:** `inHAZ` (P2P Urban Freight Platform — Morocco)  
-**Last Updated:** 2026-09-21  
+**Last Updated:** 2026-09-22  
 **Total Epics:** 10  
 **Total User Stories:** 39  
 
@@ -19,7 +19,8 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 | **W4** | Expo template leftovers — re-verified & tracked: `components/Themed.tsx`/`StyledText.tsx`/`ExternalLink.tsx`/`EditScreenInfo.tsx`/`useColorScheme.ts`/`useClientOnlyValue.ts`, `constants/Colors.ts`, `app/modal.tsx` (+ Stack entry) all deleted (shipped inside the W1 sweep); `+not-found.tsx` plain RN; zero references across `app/` + `components/` + `lib/`; `npx tsc --noEmit` passes. No code change this pass. | 🟢 done — **awaiting review** |
 | **W5** | Auth architecture + role guards: `lib/store/auth.ts` gains `driver_profile` on `User` (parsed + normalized in `checkAuth`/`setSession`; `verify-otp` doesn't load it, so `otp.tsx` refreshes `/me` after login) and role selectors `selectIsDriver`/`selectIsClient`/`selectDriverStatus`/`selectIsDriverApproved` + `useRole()`; new `components/auth/RoleGuard.tsx` guards at layout level (unauth → `/auth/login`, wrong persona → own home, `null` until auth restored); routes restructured into `(client)/` (index, requests/*, profile) and `(driver)/` (index, marketplace/*, documents/*, profile, dashboard) tab groups — URLs unchanged; shared `auth/`, `trips/`, `documents/[id]`, onboarding (`app/driver/*`) stay outside; `app/(tabs)/` + `two.tsx` deleted; per-screen role redirects removed (marketplace×2, dashboard, create.tsx); `+not-found` routes home by role; driver home shows tier-2 status pill («Vérification en cours» / rejection). `npx tsc --noEmit` passes. | 🟢 done — **awaiting review** (fresh-login landings, pending-driver gate, cold-start group resolution need a device) |
 | **W6** | API modules + mock data layer: new `lib/api/auth.ts` (sendOtp/verifyOtp/me/updateProfile/switchRole/logout — store `checkAuth`/`logout` route through it), `lib/api/documents.ts` (list/upload/getView — viewer's web-blob + native FileSystem cache download encapsulated), `lib/api/files.ts` (`fileUriToBlob`/`putToSignedUrl` for the wizard presigned PUT), `lib/api/uploads.ts` (profile photo, mock seam), `lib/api/feed.ts` (`subscribeLiveFeed`, mock seam), `lib/api/config.ts` (`EXPO_PUBLIC_USE_MOCK`, default false in `.env(.example)`), `lib/api/queryKeys.ts` (canonical RQ keys — hooks + screen queries refactored onto them); `driver.ts` extended (apply/getProfile/saveVehicle/verificationStatus/nearbyDrivers), `requests.ts` extended (`getForDriver`, `browseWithGeo`); typed fakes in `lib/api/mock/*` (nearby, feed, requests, uploads). Screens: zero `apiClient`/`fetch(` in `app/` (done-criteria grep clean); `marketplace/index` → shared `useBrowseRequests` hook; `marketplace/[id]` → `requestsApi.getForDriver`. `npx tsc --noEmit` passes. | 🟢 done — **awaiting review** (mock-feature visuals need a device) |
-| W7–W11 | See `mobile/plan.md`. | ⏳ pending |
+| **W7** | New authentication + onboarding flow (`app/auth/role-choice.tsx`, `app/onboarding/client.tsx`, `app/onboarding/driver.tsx`): post-OTP routing (§6.1) sends incomplete personas (no name, no role chosen, no driver profile) to `/auth/role-choice`, mid-flight driver applications continue into the wizard, complete personas go straight to their role home (`app/auth/otp.tsx`); role-choice (Client/Chauffeur → the two onboards) persists the persona via the onboarding outcome (client → `PUT /me` name + optional avatar upload through the mock seam until B5; driver → apply/vehicle/docs with `color` sent as an extra field until B6); driver wizard moved into the `app/onboarding/` group and finished `app/driver/apply.tsx`/`vehicle.tsx` orphans deleted; driver home gate (§6.5): verification banner (with backend rejection reason) + Dashboard/Marketplace locked behind a "Vérification en cours" toast while unapproved, Documents/Profil stay reachable, unapproved home re-fetches `/me` on focus; auth store gains `selectPersonaComplete` and the root gate lets incomplete personas sit inside the `auth` group. Shared `lib/hooks/useProfilePhoto.ts` (gallery/camera behind the W3 state machine + best-effort upload) reused by both onboards. Route types hand-synced (`.expo/types/router.d.ts`). `npx tsc --noEmit` passes. | 🟢 done — **awaiting review** (device: role-choice visuals, photo camera/denied/blocked paths, fresh-login landings, gate toasts, live-approval refresh is focus-time only) |
+| W8–W11 | See `mobile/plan.md`. | ⏳ pending |
 
 ---
 
@@ -76,6 +77,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Phase A W2:** Root layout boot trimmed — only the 6 used Inter weights loaded, boot-time location permission removed (feature-time: home maps in W8/W9), auth-restoration guard documented; routing payload unchanged. No feature change.
 * **Phase A W5:** Post-login routing in `app/auth/otp.tsx` now refreshes `/me` (the `verify-otp` payload doesn't load `driver_profile`) then routes by persona: incomplete profile → role-profile screen, otherwise the role group home (`/(client)` / `/(driver)`). No API change.
 * **Phase A W6:** Login/OTP screens call `lib/api/auth.ts` (`sendOtp`/`verifyOtp`/`me`) instead of raw `apiClient`; `otp.tsx` refreshes `/me` via `authApi.me()` after `setSession`. No API change.
+* **Phase A W7:** Post-OTP routing now implements §6.1 — incomplete personas (no name, no role chosen, no driver profile) go to `/auth/role-choice`; mid-flight driver applications continue into `/onboarding/driver`; complete personas skip to their role home. Role choice (Client/Chauffeur) leads to the per-role onboarding. No API change.
 * **Problems / Notes:** Production SMS Gateway driver (e.g., Twilio / Infobip) needs API key config in `.env`; local environment logs OTPs to Mailpit/database.
 
 #### US-102: Sanctum Token & Session Management
@@ -103,6 +105,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
   * Mobile Store & Layouts: [mobile/lib/store/auth.ts](file:///home/bagi/Notes/dev/in-haz/mobile/lib/store/auth.ts), [mobile/app/(client)/_layout.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/(client)/_layout.tsx), [mobile/app/(driver)/_layout.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/(driver)/_layout.tsx)
 * **Details & Status:** Backend validates driver verification status before allowing role switch to `driver`. Mobile app dynamically updates navigation tabs and context based on active role.
 * **Phase A W5:** Role model centralized in the auth store: `driver_profile` on `User` (from `/me`) + selectors (`isDriver` = `role === 'driver'` OR `driver_profile` present — works with today's and B1's model); two-tier guard: tier 1 = `components/auth/RoleGuard.tsx` per route group (`(client)`/`(driver)`), tier 2 = `driverStatus`/`isDriverApproved` exposed to screens (driver home shows a status pill; per-feature disabled actions deepen in W7/W9). Backend `/auth/switch-role` untouched and still callable; the switch-role UI row was parked (guards treat an approved driver as a driver persona, so a client-mode back-switch is meaningful only after backend ticket B1 — see todo §5.1 note).
+* **Phase A W7:** `/auth/role-choice` joins the auth group as the initial persona entry (Client/Chauffeur). The choice itself isn't persisted server-side in Phase A — the persona is persisted through the onboarding outcome (client → `PUT /me` name; driver → apply → `driver_profile`), `/me` refreshes via `setUser`/focus-refetch, and the root gate `selectPersonaComplete` keeps incomplete users on role-choice. The backend `switch-role` UI row stays parked (B1).
 * **Problems / Notes:** None.
 
 #### US-104: Personal Info Screen
@@ -118,16 +121,16 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Phase A W1:** Profile screen header shadow + brand colors converted to Tailwind classes (`shadow-lg shadow-primary-800/15`, `bg-primary-800`). No feature change.
 * **Phase A W5:** Profile moved into the `(client)` route group (`app/(client)/profile.tsx`); the driver-application state now comes from the auth store (`driver_profile` via `/me`) instead of a duplicate `/driver/profile` fetch, and a REJECTED candidature shows `rejection_reason`. Role-switch/driver-home rows that only made sense on the old role-generic tab are gone (approved drivers live in the `(driver)` area).
 * **Phase A W6:** Profile save now calls `authApi.updateProfile()` (typed); the driver profile screen `app/(driver)/profile.tsx` loads via `authApi.me()` + `driverApi.getProfile()`. No API change.
-* **Problems / Notes:** Dedicated profile picture / avatar photo picker upload (`POST /api/v1/profile/avatar`) is pending implementation.
+* **Phase A W7:** New `app/onboarding/client.tsx` is the first-run entry for the personal info (name required, PUT /me) + optional avatar (mock upload until B5); first-run routes there via role-choice instead of landing on the profile screen. The profile screen keeps the inline editor for later edits. No API change.
+* **Problems / Notes:** Dedicated profile picture / avatar photo picker upload (`POST /api/v1/profile/avatar`) is pending implementation (B5).
 
 #### US-105: Profile Configuration Screen
 * **State:** 🔴 `todo`
 * **Summary:** Application configuration settings and push notification preference toggles.
 * **Related Files:**
   * Spec: [dev/epic-01-core-infra-and-auth/us-105-profile-configuration-screen/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-01-core-infra-and-auth/us-105-profile-configuration-screen/README.md)
-  * Mobile Placeholder: [mobile/app/(tabs)/two.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/(tabs)/two.tsx)
 * **Details & Status:** Spec defines toggles for push notifications (trip updates, promotional alerts) and theme settings.
-* **Problems / Notes:** `mobile/app/(tabs)/two.tsx` is currently an unconfigured placeholder screen. Needs configuration UI layout.
+* **Problems / Notes:** The old placeholder `app/(tabs)/two.tsx` was deleted in W5; the screen still needs configuration UI (Phase B with the rest of the settings surface).
 
 #### US-106: Activity History Screen
 * **State:** 🟢 `done`
@@ -154,10 +157,11 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
   * Backend Controllers: [backend/app/Http/Controllers/Api/V1/DriverVerificationController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/Api/V1/DriverVerificationController.php), [backend/app/Http/Controllers/DocumentController.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Controllers/DocumentController.php)
   * Backend Models: [backend/app/Models/DriverDocument.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/DriverDocument.php), [backend/app/Models/Vehicle.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Models/Vehicle.php)
   * Backend Test: [backend/tests/Feature/Driver/DriverOnboardingTest.php](file:///home/bagi/Notes/dev/in-haz/backend/tests/Feature/Driver/DriverOnboardingTest.php)
-  * Mobile Screens: [mobile/app/driver/onboarding.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/onboarding.tsx), [mobile/app/driver/documents/upload.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/documents/upload.tsx), [mobile/app/driver/vehicle.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/vehicle.tsx)
+  * Mobile Screens: [mobile/app/onboarding/driver.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/onboarding/driver.tsx) (moved from `app/driver/onboarding.tsx` in W7), [mobile/app/(driver)/documents/upload.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/(driver)/documents/upload.tsx)
 * **Details & Status:** Document upload API with validation (PDF, JPEG, PNG, max 10MB), secure streaming endpoint (`GET /api/v1/driver/documents/{id}/view`), vehicle creation, and step-by-step mobile UI flow.
 * **Phase A W1:** Onboarding + documents list screens swept to semantic classes (wizard progress width kept inline — Tailwind can't express dynamic %). No feature change.
 * **Phase A W6:** All document HTTP moved into `lib/api/documents.ts` (`list`/`upload`/`getView`) — upload's blob branching (data:/blob: vs native path) and the viewer's web-blob/native cache-download now live there; screens call typed methods only. Driver onboarding/vehicle/apply route through `driverApi`. No API change.
+* **Phase A W7:** Driver wizard moved to `app/onboarding/driver.tsx`; the standalone `app/driver/apply.tsx`/`vehicle.tsx` screens were deleted (their steps live inside the wizard). Step 2 collects an optional avatar (mock upload until B5); step 3 adds "Couleur" sent as an extra `color` field (backend column ticket B6). Document status handling (APPROVED/PENDING/REJECTED) preserved; expiry remains backend-driven. No API change.
 * **Problems / Notes:** None.
 
 #### US-202: Driver Pending Validation Screen
@@ -166,9 +170,10 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Related Files:**
   * Spec: [dev/epic-02-driver-onboarding-and-verification/us-202-driver-pending-validation-screen/README.md](file:///home/bagi/Notes/dev/in-haz/dev/epic-02-driver-onboarding-and-verification/us-202-driver-pending-validation-screen/README.md)
   * Backend Enum: [backend/app/Enums/DriverProfileStatus.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Enums/DriverProfileStatus.php)
-  * Mobile Screen: [mobile/app/driver/onboarding.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/driver/onboarding.tsx)
+  * Mobile Screen: [mobile/app/onboarding/driver.tsx](file:///home/bagi/Notes/dev/in-haz/mobile/app/onboarding/driver.tsx)
 * **Details & Status:** Mobile onboarding screen checks driver status (`PENDING`, `APPROVED`, `REJECTED`), displays warning banner, and blocks marketplace access until approved.
 * **Phase A W1:** Status banner on onboarding screen swept to semantic badge/classes. No feature change.
+* **Phase A W7:** Pending/rejected gating now also lives on the driver home (§6.5): a verification banner (with backend rejection reason) plus Dashboard/Marketplace locked behind a "Vérification en cours" toast while unapproved; Documents/Profil stay reachable. The wizard's completion step keeps the manual-review message and lands on the driver home. An unapproved home re-fetches `/me` on focus to pick up approvals. No API change.
 * **Problems / Notes:** None.
 
 #### US-203: Admin Document Inspection & Approval (Filament)
@@ -197,6 +202,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
 * **Details & Status:** Fully implemented on backend and mobile. Features online/offline switch toggle (with green `#00C853` indicator), configurable commission debt threshold validation (200.00 MAD), daily earnings computation, active trip shortcut card, interactive cross-platform `MapRenderer`, and feature test coverage.
 * **Phase A W1:** Dashboard swept to semantic classes (CTA → `bg-primary-800`, per-card elevation → Tailwind shadows). No feature change.
 * **Phase A W6:** Dashboard reads `driverApi` under canonical `queryKeys.driver.dashboard` (10s poll retained); `nearbyDrivers` placeholder + `verificationStatus` (`/me` → `driver_profile`) added to `lib/api/driver.ts`. No API change.
+* **Phase A W7:** While unapproved, the driver home gates the Dashboard card behind a "Vérification en cours" toast (§6.5); per-feature disabled states deepen in W9. No API change.
 * **Problems / Notes:** None.
 
 #### US-205: Driver Profile Screen
@@ -208,6 +214,7 @@ Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API cha
   * Backend Resource: [backend/app/Http/Resources/DriverProfileResource.php](file:///home/bagi/Notes/dev/in-haz/backend/app/Http/Resources/DriverProfileResource.php)
 * **Details & Status:** Profile screen displays verified status badge, total completed trips, vehicle details (make, plate, capacity), and document status.
 * **Phase A W6:** Driver profile screen moved (W5) to `app/(driver)/profile.tsx` and now loads via typed `authApi.me()` + `driverApi.getProfile()` (typed `DriverProfileItem`). No API change.
+* **Phase A W7:** "Devenir chauffeur"/"Compléter le profil" actions now link to `/onboarding/driver` (wizard moved in the W7 grouping). No API change.
 * **Problems / Notes:** None.
 
 ---

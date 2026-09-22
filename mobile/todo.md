@@ -382,25 +382,25 @@ Choose role
   └── Driver
 ```
 
--   [ ] Keep phone validation with Zod.
--   [ ] Keep OTP validation with Zod.
--   [ ] Verify OTP through the Laravel API.
--   [ ] Store the returned session through `authStore.setSession()`.
--   [ ] After OTP success, route to `/auth/role-choice` only when the
+-   [x] Keep phone validation with Zod.
+-   [x] Keep OTP validation with Zod.
+-   [x] Verify OTP through the Laravel API.
+-   [x] Store the returned session through `authStore.setSession()`.
+-   [x] After OTP success, route to `/auth/role-choice` only when the
     persona is incomplete (no name set, no role chosen, no driver
     profile); otherwise go straight to the role home.
 
 ### 6.2 Role selection
 
--   [ ] Add a role-choice screen after OTP verification when the user
+-   [x] Add a role-choice screen after OTP verification when the user
     has not selected a role (`app/auth/role-choice.tsx`).
--   [ ] Add `client` and `driver` choices (two large buttons:
+-   [x] Add `client` and `driver` choices (two large buttons:
     Client / Chauffeur).
--   [ ] Persist the role through the backend — real persistence is Part B
+-   [x] Persist the role through the backend — real persistence is Part B
     (backend ticket); in Phase A use the mock seam where the backend path
     is missing.
--   [ ] Refresh `/me` after the role change.
--   [ ] Route to the corresponding onboarding flow (client → §6.3,
+-   [x] Refresh `/me` after the role change.
+-   [x] Route to the corresponding onboarding flow (client → §6.3,
     driver → §6.4).
 
 ### 6.3 Client onboarding
@@ -415,12 +415,12 @@ Profile photo
 Client home
 ```
 
--   [ ] Create client onboarding screen/state.
--   [ ] Save full name through the backend (PUT /me).
--   [ ] Upload profile photo (camera/media per §3) — upload goes through
+-   [x] Create client onboarding screen/state.
+-   [x] Save full name through the backend (PUT /me).
+-   [x] Upload profile photo (camera/media per §3) — upload goes through
     the mock seam until the backend photo endpoint exists (ticket B5).
--   [ ] Refresh authenticated user.
--   [ ] Enter client home only when required profile data is complete.
+-   [x] Refresh authenticated user.
+-   [x] Enter client home only when required profile data is complete.
 
 ### 6.4 Driver onboarding
 
@@ -440,9 +440,9 @@ Manual verification message
 Driver home
 ```
 
--   [ ] Reuse the existing driver onboarding components/API where
+-   [x] Reuse the existing driver onboarding components/API where
     possible.
--   [ ] Collect:
+-   [x] Collect:
     -   full name
     -   profile photo
     -   car model
@@ -450,25 +450,62 @@ Driver home
         field for now)
     -   plate number
     -   required documents
--   [ ] Preserve document status and expiry handling.
--   [ ] Show a manual verification message after submission (documents
+-   [x] Preserve document status and expiry handling.
+-   [x] Show a manual verification message after submission (documents
     under manual review).
--   [ ] Route the driver to the driver home after onboarding submission.
+-   [x] Route the driver to the driver home after onboarding submission.
 
 ### 6.5 Driver verification state
 
--   [ ] Define the backend-driven verification states in the mobile
+-   [x] Define the backend-driven verification states in the mobile
     types.
--   [ ] Never locally assume that a driver is approved.
--   [ ] Fetch/refresh driver verification status from the backend
+-   [x] Never locally assume that a driver is approved.
+-   [x] Fetch/refresh driver verification status from the backend
     (`/me` → `driver_profile`).
--   [ ] Disable driver marketplace/offer/trip actions while the driver
+-   [x] Disable driver marketplace/offer/trip actions while the driver
     is not approved.
--   [ ] Keep profile and status visibility available.
--   [ ] Show the verification/rejection reason when supplied by the
+-   [x] Keep profile and status visibility available.
+-   [x] Show the verification/rejection reason when supplied by the
     backend.
--   [ ] Handle approval changes after app restart/resume/refetch (refresh
+-   [x] Handle approval changes after app restart/resume/refetch (refresh
     the driver-status query key).
+
+> W7 2026-09-22: new authentication + onboarding flow (branch `refactor_phase_a`).
+> §6.1 — `app/auth/otp.tsx` routes incomplete personas (no name, no role
+> chosen, no driver profile) to `/auth/role-choice`; a mid-flight driver
+> application (driver_profile without name) continues into
+> `/onboarding/driver`. Complete personas still skip to their role home.
+> §6.2 — `app/auth/role-choice.tsx` (Client / Chauffeur). No backend
+> persistence call in Phase A: the persona is persisted through the outcome
+> of the ensuing onboarding (client → `PUT /me` name; driver → apply →
+> driver_profile), and `/me` refreshes via `setUser`/focus-refetch. The
+> backend `role` field only moves to `driver` at approval (B1), so nothing
+> calls `switchRole` here yet.
+> §6.3 — `app/onboarding/client.tsx`: name (required, PUT /me) + optional
+> avatar via the new `lib/hooks/useProfilePhoto.ts` (gallery/camera behind
+> the W3 state machine; upload through the mock seam until B5 — a failed
+> upload never blocks entry); on success → `setUser` → `/(client)`.
+> §6.4 — driver wizard moved to `app/onboarding/driver.tsx` (the W5
+> deferred `app/onboarding/` grouping); orphaned `app/driver/apply.tsx` +
+> `app/driver/vehicle.tsx` deleted (their steps live inside the wizard).
+> Step 2 gains the avatar, step 3 gains "Couleur" sent as an extra
+> `color` field (B6), `handleFinish` now replaces to `/(driver)` home.
+> §6.5 — driver home (`(driver)/index.tsx`) shows a verification banner
+> (with backend rejection reason) and gates Dashboard/Marketplace behind a
+> French "Vérification en cours" toast while unapproved; Documents/Profil
+> stay reachable. `useFocusEffect` re-fetches `/me` while unapproved so an
+> approval picked up on focus/return updates the pill.
+> Root gate: `selectPersonaComplete` added to the auth store; the
+> `_layout.tsx` gate now lets incomplete personas sit inside the `auth`
+> group (so `/auth/role-choice` isn't bounced home) while complete ones
+> still bounce straight to their role home. Route types in
+> `.expo/types/router.d.ts` hand-synced (gitignored).
+> ⚠️ Device-verification pending (no emulator): role-choice visuals,
+> client/driver onboarding photo flows (camera/denied/blocked paths),
+> pending-gate toasts, fresh-login landings. Live-approval refresh is
+> focus-time only (no push), noted for W9. Documents list keeps status
+> (APPROVED/PENDING/REJECTED); expiry stays backend-driven (no expiry
+> field in the backend documents shape today).
 
 ------------------------------------------------------------------------
 

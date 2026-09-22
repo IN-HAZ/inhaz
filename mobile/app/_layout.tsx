@@ -15,7 +15,7 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "../components/ui/ToastProvider";
-import { useAuthStore, useRole } from "../lib/store/auth";
+import { selectPersonaComplete, useAuthStore, useRole } from "../lib/store/auth";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -42,6 +42,7 @@ export default function RootLayout() {
 
     const { isLoading, isAuthenticated, checkAuth } = useAuthStore();
     const { isDriver } = useRole();
+    const personaComplete = useAuthStore(selectPersonaComplete);
     const segments = useSegments();
     const router = useRouter();
 
@@ -73,11 +74,15 @@ export default function RootLayout() {
         if (!isAuthenticated && !inAuthGroup) {
             router.replace("/auth/login");
         } else if (isAuthenticated && inAuthGroup) {
-            // W7: authenticated users with an incomplete persona route to
-            // `/auth/role-choice` (§6.2) instead of a home screen.
-            router.replace(isDriver ? "/(driver)" : "/(client)");
+            // `/auth/role-choice` (W7 §6.2) is also part of the auth group and
+            // must be allowed to sit while the persona is incomplete — otp.tsx
+            // sends incomplete users there. Complete personas bounce straight
+            // to their home before any auth screen can render.
+            if (personaComplete) {
+                router.replace(isDriver ? "/(driver)" : "/(client)");
+            }
         }
-    }, [isAuthenticated, isLoading, loaded, segments, isDriver]);
+    }, [isAuthenticated, isLoading, loaded, segments, isDriver, personaComplete]);
 
     if (!loaded || isLoading) {
         // Auth-restoration guard: never render the router gate until font load
@@ -97,9 +102,9 @@ export default function RootLayout() {
                 >
                     <Stack.Screen name="auth/login" />
                     <Stack.Screen name="auth/otp" />
-                    <Stack.Screen name="driver/apply" />
-                    <Stack.Screen name="driver/onboarding" />
-                    <Stack.Screen name="driver/vehicle" />
+                    <Stack.Screen name="auth/role-choice" />
+                    <Stack.Screen name="onboarding/client" />
+                    <Stack.Screen name="onboarding/driver" />
                     <Stack.Screen name="documents/[id]" />
                     <Stack.Screen name="(client)" />
                     <Stack.Screen name="(driver)" />

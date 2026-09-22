@@ -173,7 +173,7 @@ export default function DriverProfileScreen() {
       <View className="px-6 py-6">
         {!profile && (
           <TouchableOpacity
-            onPress={() => router.push('/driver/onboarding')}
+            onPress={() => router.push('/onboarding/driver')}
             className="bg-primary-800 rounded-2xl py-4 items-center mb-3"
           >
             <Text className="text-white font-semibold text-sm">Devenir chauffeur</Text>
@@ -182,7 +182,7 @@ export default function DriverProfileScreen() {
 
         {profile && (
           <TouchableOpacity
-            onPress={() => router.push('/driver/onboarding')}
+            onPress={() => router.push('/onboarding/driver')}
             className="flex-row items-center justify-between border border-gray-200 rounded-2xl py-4 px-4 mb-3"
           >
             <Text className="text-gray-900 font-medium text-sm">Compléter le profil</Text>

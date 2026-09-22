@@ -239,7 +239,7 @@ export default function ClientProfileScreen() {
         <View className="mx-4 bg-white rounded-2xl border border-[#EDEDF0] overflow-hidden">
           {!driverStatus ? (
             <TouchableOpacity
-              onPress={() => router.push('/driver/onboarding')}
+              onPress={() => router.push('/onboarding/driver')}
               activeOpacity={0.85}
               className="flex-row items-center px-4 py-4 bg-primary-50 active:bg-primary-100"
             >
@@ -274,7 +274,7 @@ export default function ClientProfileScreen() {
                 icon={<FileText size={16} color={PURPLE_ACCENT} />}
                 label="Documents"
                 value="Suivre"
-                onPress={() => router.push('/driver/onboarding')}
+                onPress={() => router.push('/onboarding/driver')}
               />
             </View>
           )}

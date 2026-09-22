@@ -65,8 +65,8 @@ mobile/
 │   ├── _layout.tsx       # Auth gate + root Stack routing (W5)
 │   ├── (client)/         # Client area: home, requests/*, profile (RoleGuard)
 │   ├── (driver)/         # Driver area: home, marketplace, documents, profile (RoleGuard)
-│   ├── auth/             # Phone entry & OTP screens (role-choice lands in W7)
-│   ├── driver/           # Onboarding screens (apply, onboarding, vehicle — run before a driver_profile exists)
+│   ├── auth/             # Phone entry, OTP & role-choice (W7)
+│   ├── onboarding/       # Client & driver onboarding (W7 §6.3/§6.4)
 │   ├── documents/        # Shared document viewer
 │   └── trips/            # Active delivery tracking & milestones (shared)
 ├── components/           # UI Component Library (Toast, Buttons, RoleGuard)

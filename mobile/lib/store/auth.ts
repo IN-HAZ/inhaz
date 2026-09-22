@@ -61,6 +61,15 @@ export const selectIsClient = (s: AuthState): boolean =>
 export const selectDriverStatus = (s: AuthState): DriverStatus | null =>
     s.user?.driver_profile?.status ?? null;
 
+/**
+ * W7 §6.1: persona data exists (a name is set or a driver application has
+ * started). `false` → the user still belongs on `/auth/role-choice`; the root
+ * gate lets incomplete personas sit inside the auth group.
+ */
+export const selectPersonaComplete = (s: AuthState): boolean =>
+    !!s.user &&
+    (!!s.user.name || !!s.user.customer_profile?.name || !!s.user.driver_profile);
+
 export const selectIsDriverApproved = (s: AuthState): boolean =>
     selectIsDriver(s) && selectDriverStatus(s) === "APPROVED";
 

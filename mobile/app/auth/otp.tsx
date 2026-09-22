@@ -38,10 +38,12 @@ export default function OtpScreen() {
         const u = meUser ?? grant.user;
         const incomplete = !u.name && !u.customer_profile?.name;
         const isDriver = u.role === 'driver' || !!u.driver_profile;
-        // W7: incomplete persona → /auth/role-choice instead of a home screen.
+        const hasDriverPersona = !!u.driver_profile;
+        // §6.1: incomplete persona → role-choice; a mid-flight driver
+        // application continues straight into the driver wizard.
         router.replace(
           incomplete
-            ? isDriver ? '/driver/profile' : '/profile'
+            ? hasDriverPersona ? '/onboarding/driver' : '/auth/role-choice'
             : isDriver ? '/(driver)' : '/(client)'
         );
       }
