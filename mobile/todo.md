@@ -230,22 +230,29 @@
 
 Delete the legacy components/hooks after fixing their consumers:
 
--   [ ] `components/Themed.tsx`
--   [ ] `components/StyledText.tsx`
--   [ ] `components/ExternalLink.tsx`
--   [ ] `components/EditScreenInfo.tsx`
--   [ ] `components/useColorScheme.ts`
--   [ ] `components/useClientOnlyValue.ts`
--   [ ] `constants/Colors.ts` if no longer referenced
--   [ ] Delete `app/modal.tsx` (template-only content) and remove its
+-   [x] `components/Themed.tsx`
+-   [x] `components/StyledText.tsx`
+-   [x] `components/ExternalLink.tsx`
+-   [x] `components/EditScreenInfo.tsx`
+-   [x] `components/useColorScheme.ts`
+-   [x] `components/useClientOnlyValue.ts`
+-   [x] `constants/Colors.ts` if no longer referenced
+-   [x] Delete `app/modal.tsx` (template-only content) and remove its
     Stack entry from the root layout.
--   [ ] Replace `app/+not-found.tsx` legacy imports with plain RN
+-   [x] Replace `app/+not-found.tsx` legacy imports with plain RN
     `Text`/`View` + Tailwind classes.
--   [ ] Replace legacy component usage with the current UI kit/Tailwind
+-   [x] Replace legacy component usage with the current UI kit/Tailwind
     classes.
--   [ ] Remove dead imports.
--   [ ] Search for remaining references before deleting files.
--   [ ] Run TypeScript after cleanup.
+-   [x] Remove dead imports.
+-   [x] Search for remaining references before deleting files.
+-   [x] Run TypeScript after cleanup.
+
+> W4 2026-09-22: code was already delivered inside the W1 sweep
+> (template modules deleted, `app/modal.tsx` + Stack entry removed,
+> `+not-found.tsx` rewritten plain RN, `constants/Colors.ts` gone). This
+> pass re-verified and ticked the §4 checklist: zero references to any
+> deleted module across `app/` + `components/` + `lib/`; `npx tsc --noEmit`
+> passes. No code change.
 
 ------------------------------------------------------------------------
 
