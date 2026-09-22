@@ -1,23 +1,17 @@
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Redirect, useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, MapPin, DollarSign, Clock, Package } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { offersApi, BrowseRequest } from '@/lib/api/offers';
 import { getErrorMessage } from '@/lib/api/errors';
-import { useAuthStore } from '@/lib/store/auth';
 
 export default function RequestDetailScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [price, setPrice] = useState('');
   const [message, setMessage] = useState('');
-
-  if (user?.role !== 'driver') {
-    return <Redirect href="/profile" />;
-  }
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['browse-detail', id],

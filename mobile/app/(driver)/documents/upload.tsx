@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { apiClient } from '../../../lib/api/client';
-import { useToast } from '../../../components/ui/ToastProvider';
-import { getErrorMessage } from '../../../lib/api/errors';
+import { apiClient } from '@/lib/api/client';
+import { useToast } from '@/components/ui/ToastProvider';
+import { getErrorMessage } from '@/lib/api/errors';
 import { ArrowLeft, Upload, Check } from 'lucide-react-native';
 
 const ALL_DOCUMENT_TYPES = [

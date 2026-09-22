@@ -62,13 +62,15 @@ EXPO_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```text
 mobile/
 ├── app/                  # Expo Router File-Based Screens
-│   ├── (tabs)/           # Navigation Tabs
-│   ├── auth/             # Phone entry & OTP screens
-│   ├── driver/           # Driver onboarding, documents & marketplace
-│   ├── requests/         # Client request creation & bidding stream
-│   └── trips/            # Active delivery tracking & milestones
-├── components/           # UI Component Library (Toast, Buttons, Steppers)
+│   ├── _layout.tsx       # Auth gate + root Stack routing (W5)
+│   ├── (client)/         # Client area: home, requests/*, profile (RoleGuard)
+│   ├── (driver)/         # Driver area: home, marketplace, documents, profile (RoleGuard)
+│   ├── auth/             # Phone entry & OTP screens (role-choice lands in W7)
+│   ├── driver/           # Onboarding screens (apply, onboarding, vehicle — run before a driver_profile exists)
+│   ├── documents/        # Shared document viewer
+│   └── trips/            # Active delivery tracking & milestones (shared)
+├── components/           # UI Component Library (Toast, Buttons, RoleGuard)
 ├── constants/            # Color themes & constants
-├── lib/                  # Zustand stores & REST API clients
+├── lib/                  # Zustand stores (auth w/ role selectors) & REST API clients
 └── tailwind.config.js    # NativeWind Tailwind configuration
 ```

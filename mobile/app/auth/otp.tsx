@@ -13,6 +13,7 @@ export default function OtpScreen() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((s) => s.setSession);
+  const setUser = useAuthStore((s) => s.setUser);
   const toast = useToast();
 
   const handleVerifyOtp = async () => {
@@ -33,9 +34,19 @@ export default function OtpScreen() {
       if (response.data.user && response.data.token) {
         await setSession(response.data.user, response.data.token);
         toast.success("Connexion réussie !");
-        const u = response.data.user;
+        // `verify-otp` does not load `driver_profile`; refresh once from `/me`
+        // so role routing sees the real persona (W5 §5.1).
+        const meUser = await apiClient.get('/me').catch(() => null);
+        if (meUser?.data?.user) setUser(meUser.data.user);
+        const u = meUser?.data?.user ?? response.data.user;
         const incomplete = !u.name && !u.customer_profile?.name;
-        router.replace(incomplete ? '/(tabs)/profile' : '/(tabs)');
+        const isDriver = u.role === 'driver' || !!u.driver_profile;
+        // W7: incomplete persona → /auth/role-choice instead of a home screen.
+        router.replace(
+          incomplete
+            ? isDriver ? '/driver/profile' : '/profile'
+            : isDriver ? '/(driver)' : '/(client)'
+        );
       }
     } catch (e: any) {
       toast.error(getErrorMessage(e));

@@ -15,12 +15,15 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "../components/ui/ToastProvider";
-import { useAuthStore } from "../lib/store/auth";
+import { useAuthStore, useRole } from "../lib/store/auth";
 
 export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
-    initialRouteName: "(tabs)",
+    // Cold links resolve `(client)` before `(driver)` (alphabetical); its
+    // RoleGuard immediately bounces drivers to `/(driver)`. In-app navigation
+    // always targets explicit group hrefs, so this only shows on cold starts.
+    initialRouteName: "(client)",
 };
 
 SplashScreen.preventAutoHideAsync();
@@ -38,6 +41,7 @@ export default function RootLayout() {
     });
 
     const { isLoading, isAuthenticated, checkAuth } = useAuthStore();
+    const { isDriver } = useRole();
     const segments = useSegments();
     const router = useRouter();
 
@@ -58,6 +62,9 @@ export default function RootLayout() {
     // No boot-time permission requests here: location is requested when the
     // client/driver home maps mount (W8/W9), camera is feature-time only (W3).
 
+    // Root routing gate (W5 §5.4). Post-login destinations are decided by
+    // `app/auth/otp.tsx`; this effect only enforces the area boundary and the
+    // "stay out of the auth group once logged in" rule.
     useEffect(() => {
         if (isLoading || !loaded) return;
 
@@ -66,9 +73,11 @@ export default function RootLayout() {
         if (!isAuthenticated && !inAuthGroup) {
             router.replace("/auth/login");
         } else if (isAuthenticated && inAuthGroup) {
-            router.replace("/(tabs)");
+            // W7: authenticated users with an incomplete persona route to
+            // `/auth/role-choice` (§6.2) instead of a home screen.
+            router.replace(isDriver ? "/(driver)" : "/(client)");
         }
-    }, [isAuthenticated, isLoading, loaded, segments]);
+    }, [isAuthenticated, isLoading, loaded, segments, isDriver]);
 
     if (!loaded || isLoading) {
         // Auth-restoration guard: never render the router gate until font load
@@ -90,18 +99,10 @@ export default function RootLayout() {
                     <Stack.Screen name="auth/otp" />
                     <Stack.Screen name="driver/apply" />
                     <Stack.Screen name="driver/onboarding" />
-                    <Stack.Screen name="driver/profile" />
                     <Stack.Screen name="driver/vehicle" />
-                    <Stack.Screen name="driver/documents/index" />
-                    <Stack.Screen name="driver/documents/upload" />
                     <Stack.Screen name="documents/[id]" />
-                    <Stack.Screen name="requests/index" />
-                    <Stack.Screen name="requests/create" />
-                    <Stack.Screen name="requests/[id]" />
-                    <Stack.Screen name="requests/offers/[id]" />
-                    <Stack.Screen name="driver/marketplace/index" />
-                    <Stack.Screen name="driver/marketplace/[id]" />
-                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="(client)" />
+                    <Stack.Screen name="(driver)" />
                 </Stack>
             </ToastProvider>
         </QueryClientProvider>

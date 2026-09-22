@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import { apiClient } from '../../lib/api/client';
-import { useAuthStore } from '../../lib/store/auth';
-import { useToast } from '../../components/ui/ToastProvider';
-import { getErrorMessage } from '../../lib/api/errors';
+import { apiClient } from '@/lib/api/client';
+import { useAuthStore } from '@/lib/store/auth';
+import { useToast } from '@/components/ui/ToastProvider';
+import { getErrorMessage } from '@/lib/api/errors';
 import { ArrowLeft, LogOut, ChevronRight, FileText, Car, Check, Clock, X as XIcon, Eye } from 'lucide-react-native';
 
 interface DriverProfile {

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Package, ChevronRight } from 'lucide-react-native';
 import { tripsApi, TripItem, getStatusLabel } from '@/lib/api/trips';
 import { getErrorMessage } from '@/lib/api/errors';
-import { useAuthStore } from '@/lib/store/auth';
+import { useRole } from '@/lib/store/auth';
 
 const STATUS_COLORS: Record<string, { badge: string; text: string }> = {
   ASSIGNED: { badge: 'bg-amber-100', text: 'text-amber-600' },
@@ -19,8 +19,7 @@ const STATUS_COLORS: Record<string, { badge: string; text: string }> = {
 
 export default function TripsScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const isDriver = user?.role === 'driver';
+  const { isDriver } = useRole();
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ['trips', isDriver ? 'driver' : 'client'],

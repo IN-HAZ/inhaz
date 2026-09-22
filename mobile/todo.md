@@ -260,20 +260,20 @@ Delete the legacy components/hooks after fixing their consumers:
 
 ### 5.1 User/role model
 
--   [ ] Use the existing Zustand auth store.
--   [ ] Define the supported roles explicitly:
+-   [x] Use the existing Zustand auth store.
+-   [x] Define the supported roles explicitly:
     -   `client`
     -   `driver`
--   [ ] Keep role information in the authenticated `user`.
--   [ ] Do not duplicate role state in screens.
--   [ ] Extend the auth store `User` type with `driver_profile` (id,
+-   [x] Keep role information in the authenticated `user`.
+-   [x] Do not duplicate role state in screens.
+-   [x] Extend the auth store `User` type with `driver_profile` (id,
     status `PENDING`/`APPROVED`/`REJECTED`, rejection_reason) — `GET /me`
     already returns it; parse it in `checkAuth()`/`setSession()`.
--   [ ] Add store selectors: `isClient`, `isDriver`, `driverStatus`,
+-   [x] Add store selectors: `isClient`, `isDriver`, `driverStatus`,
     `isDriverApproved`.
--   [ ] Role guard is two-tier: tier 1 = area access (role/persona);
+-   [x] Role guard is two-tier: tier 1 = area access (role/persona);
     tier 2 = feature access (driver verification state).
--   [ ] Driver applicants get `role=driver` with a non-approved status
+-   [x] Driver applicants get `role=driver` with a non-approved status
     only after backend ticket B1; the mobile logic must keep working with
     both today's and the future model (role OR driver_profile presence).
 
@@ -303,45 +303,64 @@ app/
 └── ...
 ```
 
--   [ ] Create the client route group (`app/(client)/_layout.tsx`).
--   [ ] Create the driver route group (`app/(driver)/_layout.tsx`).
--   [ ] Move role-specific screens into the appropriate group.
--   [ ] Keep genuinely shared authenticated screens outside
+-   [x] Create the client route group (`app/(client)/_layout.tsx`).
+-   [x] Create the driver route group (`app/(driver)/_layout.tsx`).
+-   [x] Move role-specific screens into the appropriate group.
+-   [x] Keep genuinely shared authenticated screens outside
     role-specific groups: `auth/`, `trips/`, `documents/[id]`,
     `onboarding/` (apply/onboarding/vehicle).
--   [ ] The `(client)`/`(driver)` groups do not change URLs.
+-   [x] The `(client)`/`(driver)` groups do not change URLs.
 
 ### 5.3 RoleGuard
 
--   [ ] Create `components/auth/RoleGuard.tsx`.
--   [ ] Tier 1 (area): guard unauthenticated users → `/auth/login`.
--   [ ] Tier 1 (area): guard authenticated users with the wrong role →
+-   [x] Create `components/auth/RoleGuard.tsx`.
+-   [x] Tier 1 (area): guard unauthenticated users → `/auth/login`.
+-   [x] Tier 1 (area): guard authenticated users with the wrong role →
     route to that role's home (no separate unauthorized screen needed).
--   [ ] Tier 2 (features, driver): pending/rejected drivers may enter
+-   [x] Tier 2 (features, driver): pending/rejected drivers may enter
     the driver area, but every restricted action renders disabled with a
     French explanation ("Vérification en cours", or the rejection reason
     when supplied).
--   [ ] Prevent rendering protected content before auth state is known.
--   [ ] Apply `RoleGuard` at route-layout level instead of duplicating
+-   [x] Prevent rendering protected content before auth state is known.
+-   [x] Apply `RoleGuard` at route-layout level instead of duplicating
     checks in every screen.
--   [ ] Keep backend authorization independent from the client guard
+-   [x] Keep backend authorization independent from the client guard
     (backend 403s remain authoritative).
 
 ### 5.4 Root routing
 
--   [ ] Update `app/_layout.tsx` to handle:
+-   [x] Update `app/_layout.tsx` to handle:
     -   auth loading
     -   unauthenticated state
     -   authenticated client
     -   authenticated driver
 -   [ ] Authenticated users with an incomplete persona route to
     `/auth/role-choice` (§6.2) instead of a home screen.
--   [ ] Remove old `(tabs)`-based role routing once the new structure is
+-   [x] Remove old `(tabs)`-based role routing once the new structure is
     stable (including the `two.tsx` redirect stub).
--   [ ] Avoid imperative navigation chains after login when route state
+-   [x] Avoid imperative navigation chains after login when route state
     can determine the destination.
 
 ------------------------------------------------------------------------
+> W5 2026-09-22: auth store gains `driver_profile` on `User` (parsed + normalized
+> in `checkAuth`/`setSession`; `verify-otp` does NOT load it, so `auth/otp.tsx`
+> refreshes `/me` right after login) and role selectors (`selectIsDriver`,
+> `selectIsClient`, `selectDriverStatus`, `selectIsDriverApproved` +
+> `useRole()`). `components/auth/RoleGuard.tsx` guards at layout level
+> (unauth → `/auth/login`, wrong persona → own home, `null` until auth known).
+> Routes restructured: `(client)/` (index, requests/*, profile) and `(driver)/`
+> (index, marketplace/*, documents/*, profile, dashboard) tab groups; shared
+> screens stay outside (`auth/`, `trips/`, `documents/[id]`, onboarding at
+> `app/driver/*`); `app/(tabs)/` + `two.tsx` deleted. URLs are unchanged by the
+> groups. Per-screen role redirects removed (done-criteria: none remain).
+> Tier-2 driver verification is exposed via selectors + a status pill on the
+> driver home; per-feature disabled actions deepen in W7/W9. Left unticked:
+> `§5.4` role-choice routing (screen ships in W7) and the B1 backend-role note
+> (out of scope). Cold-start `/` resolves to `(client)` first (alphabetical);
+> its guard bounces drivers to `/(driver)` — same shape the 2025 refactor used.
+> ⚠️ device checks (fresh-login landings, pending-driver gate) pending emulator.
+
+--------------------------------------------------------------------
 
 ## 6. New authentication/onboarding flow
 

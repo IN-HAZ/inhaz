@@ -1,21 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { apiClient } from '@/lib/api/client';
-import { useAuthStore } from '@/lib/store/auth';
+import { useAuthStore, useRole } from '@/lib/store/auth';
 import { useToast } from '@/components/ui/ToastProvider';
 import { getErrorMessage } from '@/lib/api/errors';
-import { User, ChevronRight, LogOut, Car, Store, Mail, Phone, Pencil, Sparkles, FileText } from 'lucide-react-native';
-
-type DriverStatus = 'none' | 'PENDING' | 'APPROVED' | 'REJECTED';
+import { User, ChevronRight, LogOut, Car, Mail, Phone, Pencil, Sparkles, FileText } from 'lucide-react-native';
 
 const PURPLE = '#4B2861';
 const PURPLE_ACCENT = '#7C2DF5';
@@ -55,57 +52,38 @@ function Row({
       ) : showHint ? (
         <Text className="text-primary-700 text-[15px] font-medium mr-1.5">{hint}</Text>
       ) : null}
-      <ChevronRight size={18} color="#C7C7CC" />
+      <View className="w-5 h-5 items-center justify-center">
+        <ChevronRight size={17} color="#C4C8CF" />
+      </View>
     </TouchableOpacity>
   );
 }
 
-export default function ProfileTabScreen() {
+const driverStatusLabel: Record<string, string> = {
+  PENDING: 'En attente',
+  REJECTED: 'Rejeté',
+  APPROVED: 'Approuvé',
+};
+
+/**
+ * Client profile (W5). Lives in the `(client)` group; the driver application
+ * state comes from the auth store (`/me` → `driver_profile`), never from a
+ * duplicate screen fetch.
+ */
+export default function ClientProfileScreen() {
   const router = useRouter();
   const { user, setUser, logout } = useAuthStore();
+  const { driverStatus } = useRole();
   const toast = useToast();
 
   const [name, setName] = useState(user?.customer_profile?.name || user?.name || '');
   const [email, setEmail] = useState(user?.customer_profile?.email || '');
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [driverStatus, setDriverStatus] = useState<DriverStatus>('none');
-  const [statusLoaded, setStatusLoaded] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    if (!user || user.role === 'driver') {
-      setDriverStatus('none');
-      setStatusLoaded(true);
-      return;
-    }
-    apiClient
-      .get('/driver/profile')
-      .then((res) => {
-        const status = res.data?.driver_profile?.status;
-        if (active) setDriverStatus(status === 'APPROVED' || status === 'REJECTED' ? status : status === 'PENDING' ? status : 'none');
-      })
-      .catch(() => {
-        if (active) setDriverStatus('none');
-      })
-      .finally(() => {
-        if (active) setStatusLoaded(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, [user?.id]);
-
-  const isDriver = user?.role === 'driver';
-  const driverStatusLabel =
-    driverStatus === 'PENDING' ? 'En attente' :
-    driverStatus === 'REJECTED' ? 'Rejeté' :
-    driverStatus === 'APPROVED' ? 'Approuvé' : '';
   const incomplete = !name.trim() && !email.trim();
   const displayName = user?.customer_profile?.name || user?.name || 'Client';
   const initial = displayName.charAt(0).toUpperCase();
-  const roleLabel = isDriver ? 'Chauffeur' : 'Client';
-  const roleDot = isDriver ? 'bg-accent-500' : 'bg-primary-500';
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -122,7 +100,7 @@ export default function ProfileTabScreen() {
       }
       toast.success('Profil enregistré');
       setEditing(false);
-      router.replace('/');
+      router.replace('/(client)');
     } catch (e: any) {
       toast.error(getErrorMessage(e));
     } finally {
@@ -141,30 +119,7 @@ export default function ProfileTabScreen() {
     router.replace('/auth/login');
   };
 
-  const handleSwitchRole = async (targetMode: 'client' | 'driver') => {
-    try {
-      const res = await apiClient.post('/auth/switch-role', { mode: targetMode });
-      if (res.data.allowed && res.data.user) {
-        setUser(res.data.user);
-        toast.success(targetMode === 'driver' ? 'Passé en Mode Chauffeur' : 'Passé en Mode Client');
-        if (targetMode === 'driver') {
-          router.push('/driver/dashboard');
-        }
-      } else {
-        toast.error('Changement de rôle non autorisé.');
-      }
-    } catch (e: any) {
-      toast.error(getErrorMessage(e));
-    }
-  };
-
-  const handleOpenDashboard = () => {
-    if (!isDriver) {
-      handleSwitchRole('driver');
-    } else {
-      router.push('/driver/dashboard');
-    }
-  };
+  const rejectionReason = driverStatus === 'REJECTED' ? user?.driver_profile?.rejection_reason : null;
 
   return (
     <SafeAreaView className="flex-1 bg-[#F2F2F7]">
@@ -185,8 +140,8 @@ export default function ProfileTabScreen() {
           <View className="flex-row items-center mt-3.5">
             <Text className="text-gray-900 text-[19px] font-bold">{displayName}</Text>
             <View className="ml-2 flex-row items-center rounded-full bg-primary-50 pl-2 pr-3 py-1">
-              <View className={`w-1.5 h-1.5 rounded-full ${roleDot} mr-1.5`} />
-              <Text className="text-primary-700 text-[11px] font-semibold">{roleLabel}</Text>
+              <View className="w-1.5 h-1.5 rounded-full bg-primary-500 mr-1.5" />
+              <Text className="text-primary-700 text-[11px] font-semibold">Client</Text>
             </View>
           </View>
           <Text className="text-gray-500 text-sm mt-1">{user?.phone}</Text>
@@ -280,39 +235,9 @@ export default function ProfileTabScreen() {
         </View>
 
         {/* ===== Chauffeur ===== */}
-        <Text className={sectionLabel}>
-          {isDriver || driverStatus === 'APPROVED' ? 'Espace chauffeur' : 'Chauffeur'}
-        </Text>
+        <Text className={sectionLabel}>Chauffeur</Text>
         <View className="mx-4 bg-white rounded-2xl border border-[#EDEDF0] overflow-hidden">
-          {isDriver || driverStatus === 'APPROVED' ? (
-            <View>
-              <Row
-                icon={<Store size={16} color={PURPLE_ACCENT} />}
-                label="Tableau de bord Chauffeur"
-                value="Accéder"
-                onPress={handleOpenDashboard}
-              />
-              <Divider />
-              <Row
-                icon={<Car size={16} color={PURPLE_ACCENT} />}
-                label="Profil chauffeur"
-                value="Documents"
-                onPress={() => router.push('/driver/profile')}
-              />
-              <Divider />
-              <Row
-                icon={<Sparkles size={16} color={PURPLE_ACCENT} />}
-                label="Mode actif"
-                value={isDriver ? 'Chauffeur (Passer en Client)' : 'Client (Passer en Chauffeur)'}
-                onPress={() => handleSwitchRole(isDriver ? 'client' : 'driver')}
-              />
-            </View>
-          ) : !statusLoaded ? (
-            <View className="flex-row items-center px-4 py-4">
-              <ActivityIndicator size="small" color={PURPLE} />
-              <Text className="text-[#8A9099] text-[15px] ml-3">Chargement de votre espace chauffeur...</Text>
-            </View>
-          ) : driverStatus === 'none' ? (
+          {!driverStatus ? (
             <TouchableOpacity
               onPress={() => router.push('/driver/onboarding')}
               activeOpacity={0.85}
@@ -334,9 +259,16 @@ export default function ProfileTabScreen() {
               <Row
                 icon={<Car size={16} color={PURPLE_ACCENT} />}
                 label="Ma candidature"
-                value={driverStatusLabel}
+                value={driverStatusLabel[driverStatus] ?? driverStatus}
                 onPress={() => router.push('/driver/profile')}
               />
+              {rejectionReason ? (
+                <View className="px-4 pb-3 bg-red-50/60">
+                  <Text className="text-[#B42318] text-[13px] leading-5">
+                    Motif du rejet : {rejectionReason}
+                  </Text>
+                </View>
+              ) : null}
               <Divider />
               <Row
                 icon={<FileText size={16} color={PURPLE_ACCENT} />}

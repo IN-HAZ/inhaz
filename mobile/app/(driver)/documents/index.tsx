@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { apiClient } from '../../../lib/api/client';
+import { apiClient } from '@/lib/api/client';
 import { ArrowLeft, FileText, Plus, Eye, Check, Clock, X, CheckCircle } from 'lucide-react-native';
 
 interface Document {

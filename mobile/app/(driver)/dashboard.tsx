@@ -10,7 +10,7 @@ import {
     RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Redirect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import {
     TrendingUp,
     Package,
@@ -92,10 +92,6 @@ export default function DriverDashboardScreen() {
             toast.error(getErrorMessage(err));
         }
     };
-
-    if (user?.role !== "driver") {
-        return <Redirect href="/(tabs)/profile" />;
-    }
 
     const isOnline = summary?.is_online ?? false;
     const isApproved = summary?.driver_status === "APPROVED";

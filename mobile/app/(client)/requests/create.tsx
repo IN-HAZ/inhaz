@@ -12,7 +12,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { ArrowLeft, Truck, Bike } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -22,7 +22,6 @@ import type { BaseMapHandle as MapRendererHandle, RouteMarker, MapPoint, Region 
 import { requestsApi } from '@/lib/api/requests';
 import { getPlaceDetails, reverseGeocode, PlaceSearchResult } from '@/lib/api/geocoding';
 import { getErrorMessage } from '@/lib/api/errors';
-import { useAuthStore } from '@/lib/store/auth';
 
 import { usePlaceSearch } from '@/lib/hooks/usePlaceSearch';
 import { useCameraPermission } from '@/lib/hooks/useCameraPermission';
@@ -72,7 +71,6 @@ function fitRegion(points: { latitude: number; longitude: number }[]): Region | 
 
 export default function CreateRequestScreen() {
   const router   = useRouter();
-  const { user } = useAuthStore();
 
   // Camera permission state machine for package photos (feature-time only).
   // The same featureKey is reused by the RequestWizard after the W8 refactor so
@@ -80,9 +78,6 @@ export default function CreateRequestScreen() {
   const { state: cameraState, request: requestCamera, openSettings: openCameraSettings } =
     useCameraPermission('request-package-photos');
 
-  if (user?.role === 'driver') return <Redirect href="/driver/dashboard" />;
-
-  // ── Draft & step ─────────────────────────────────────────────────────────────
   const [draftId,       setDraftId]       = useState<number | null>(null);
   const [step,          setStep]          = useState(1);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -485,7 +480,7 @@ export default function CreateRequestScreen() {
     setIsPublishing(true);
     try {
       await requestsApi.publish(draftId);
-      Alert.alert('Succès', 'Votre demande a été publiée !', [{ text: 'OK', onPress: () => router.replace('/(tabs)/requests' as any) }]);
+      Alert.alert('Succès', 'Votre demande a été publiée !', [{ text: 'OK', onPress: () => router.replace('/requests') }]);
     } catch (e: any) {
       Alert.alert('Erreur', getErrorMessage(e) || 'Impossible de publier la demande');
     } finally { setIsPublishing(false); }

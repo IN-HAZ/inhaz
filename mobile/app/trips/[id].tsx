@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { TripItem, getNextStatus, getStatusLabel } from '@/lib/api/trips';
 import { useTripDetail } from '@/lib/hooks/useTripDetails';
 import { getErrorMessage } from '@/lib/api/errors';
-import { useAuthStore } from '@/lib/store/auth';
+import { useRole } from '@/lib/store/auth';
 
 const STATUS_COLORS: Record<string, { badge: string; text: string }> = {
   ASSIGNED: { badge: 'bg-amber-100', text: 'text-amber-600' },
@@ -21,8 +21,7 @@ const STATUS_COLORS: Record<string, { badge: string; text: string }> = {
 export default function TripDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuthStore();
-  const isDriver = user?.role === 'driver';
+  const { isDriver } = useRole();
   const [cancelReason, setCancelReason] = useState('');
   const [showCancel, setShowCancel] = useState(false);
   const [showRate, setShowRate] = useState(false);
