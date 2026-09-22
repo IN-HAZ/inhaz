@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import * as Location from 'expo-location';
 import { Plus, User } from 'lucide-react-native';
 
 import { RequestMap } from '@/components/map/variants/RequestMap';
-import type { BaseMapHandle, MapPoint, Region, NearbyDriverMarker } from '@/components/map/core/BaseMapTypes';
+import type { BaseMapHandle, MapPoint, NearbyDriverMarker } from '@/components/map/core/BaseMapTypes';
 import { RequestWizard } from '@/components/requests/RequestWizard';
 import type { RequestWizardMapView } from '@/components/requests/types';
 import { driverApi } from '@/lib/api/driver';
-
-const IDLE_DELTA = 0.05;
+import { useLocationOnEntry, HOME_DELTA } from '@/lib/hooks/useLocationOnEntry';
 
 /** Adapter from the API/mock driver shape to the map marker layer shape. */
 function toDriverMarkers(drivers: Awaited<ReturnType<typeof driverApi.nearbyDrivers>>): NearbyDriverMarker[] {
@@ -36,31 +34,17 @@ export default function ClientHomeScreen() {
 
   const mapRef = useRef<BaseMapHandle | null>(null);
 
-  const [currentLocation, setCurrentLocation] = useState<MapPoint | null>(null);
-  const [homeRegion, setHomeRegion] = useState<Region | null>(null);
+  // Shared "GPS on entry" hook (W9) — permission prompt + first fix, mounted
+  // once per home screen, never at app boot.
+  const { currentLocation, setCurrentLocation, homeRegion, setHomeRegion } =
+    useLocationOnEntry();
+
   const [drivers, setDrivers] = useState<NearbyDriverMarker[]>([]);
 
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardView, setWizardView] = useState<RequestWizardMapView | null>(null);
   const wizardRecenterRef = useRef<((point: MapPoint) => void) | null>(null);
   const wizardOpenedOnceRef = useRef(false);
-
-  // ── GPS on entry (§7) — never at boot ────────────────────────────────────────
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') return;
-        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        if (!alive) return;
-        const pt: MapPoint = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-        setCurrentLocation(pt);
-        setHomeRegion({ ...pt, latitudeDelta: IDLE_DELTA, longitudeDelta: IDLE_DELTA });
-      } catch {}
-    })();
-    return () => { alive = false; };
-  }, []);
 
   // ── Nearby drivers from the mock seam, centered on the user ──────────────────
   useEffect(() => {
@@ -90,7 +74,7 @@ export default function ClientHomeScreen() {
     if (wizardOpen && wizardRecenterRef.current) {
       wizardRecenterRef.current(pt);
     } else {
-      setHomeRegion({ ...pt, latitudeDelta: IDLE_DELTA, longitudeDelta: IDLE_DELTA });
+      setHomeRegion({ ...pt, latitudeDelta: HOME_DELTA, longitudeDelta: HOME_DELTA });
     }
   }, [wizardOpen]);
 

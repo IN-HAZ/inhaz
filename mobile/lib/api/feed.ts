@@ -1,8 +1,8 @@
 import { USE_MOCK } from "./config";
 import { subscribeMockFeed } from "./mock";
-import type { FeedEvent } from "./mock/types";
+import type { FeedEvent, FeedEventType } from "./mock/types";
 
-export type { FeedEvent };
+export type { FeedEvent, FeedEventType };
 
 export type FeedHandler = (event: FeedEvent) => void;
 

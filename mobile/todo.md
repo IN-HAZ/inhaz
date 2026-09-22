@@ -642,20 +642,36 @@ Target:
 └──────────────────────┘
 ```
 
--   [ ] Make driver home map-first.
--   [ ] Request location permission on entry; show current location.
--   [ ] Show nearby open requests on the map — from the mock data layer
+-   [x] Make driver home map-first.
+-   [x] Request location permission on entry; show current location.
+-   [x] Show nearby open requests on the map — from the mock data layer
     in Phase A (real endpoint + broadcasts are backend tickets B4/B7/B8);
     the layer/marker code is identical either way.
--   [ ] Create a request marker/layer for the map (`NearbyRequestLayer`).
--   [ ] Make markers open request details.
--   [ ] Replace the current dashboard-first home experience (dashboard
+-   [x] Create a request marker/layer for the map (`NearbyRequestLayer`).
+-   [x] Make markers open request details.
+-   [x] Replace the current dashboard-first home experience (dashboard
     summary — earnings, online toggle — moves to the profile area or a
     compact header; online toggle stays functional).
--   [ ] Bottom live list (max 3 requests) fed by the realtime hook (§10).
--   [ ] Keep driver profile/status accessible separately.
--   [ ] Disable request interaction while driver verification is not
+-   [x] Bottom live list (max 3 requests) fed by the realtime hook (§10).
+-   [x] Keep driver profile/status accessible separately.
+-   [x] Disable request interaction while driver verification is not
     approved.
+
+> W9 2026-09-23: driver home rewritten map-first. Single `DriverHomeMap`
+> (BaseMap + CurrentLocationLayer + `NearbyRequestLayer`) under a header
+> overlay; GPS via shared `lib/hooks/useLocationOnEntry.ts` (also used by the
+> client home — one permission-prompt/first-fix implementation). Baseline
+> markers come from the new `requestsApi.nearbyRequests` seam (mock-backed
+> `mockNearbyRequests`, geo `NearbyRequest` shape — `browseWithGeo` returns
+> `BrowseRequest` with no map coordinates, so it can't feed markers; returns
+> `[]` with the mock flag off). Approved: compact dashboard strip (greeting +
+> status dot + online toggle + gains/courses/commission + "Résumé" →
+> `/driver/dashboard`) and the floating max-3 live list (newest-first by
+> `created_at`, opened from map marker or list tap). Unapproved: W7 banner
+> over a read-only map — markers visible, taps no-op, no live list; profile +
+> documents reachable (header icons + banner button). Realtime churn merges
+> into the same cache key (§10). Unticked device items: map-first landing,
+> live-feed churn, banner/strip/list spacing — emulator pending.
 
 ------------------------------------------------------------------------
 
@@ -673,18 +689,18 @@ Echo/Pusher dependencies exist but are not wired into the application.
     wire the interface to the real channel, delete the mock.
 -   [ ] Define the backend broadcast events required for nearby request
     updates (backend contract, Part B).
--   [ ] Subscribe only while the driver home is active and eligible.
--   [ ] Unsubscribe when leaving the screen.
--   [ ] Avoid creating multiple Echo connections/subscriptions.
--   [ ] Deduplicate incoming requests.
--   [ ] Update the TanStack Query cache when a realtime event arrives.
--   [ ] Keep the list capped at 3 requests.
--   [ ] Sort/update the list according to the backend event data.
--   [ ] Remove expired/claimed/cancelled requests from the live list.
--   [ ] Update map markers from the same source of state.
+-   [x] Subscribe only while the driver home is active and eligible.
+-   [x] Unsubscribe when leaving the screen.
+-   [x] Avoid creating multiple Echo connections/subscriptions.
+-   [x] Deduplicate incoming requests.
+-   [x] Update the TanStack Query cache when a realtime event arrives.
+-   [x] Keep the list capped at 3 requests.
+-   [x] Sort/update the list according to the backend event data.
+-   [x] Remove expired/claimed/cancelled requests from the live list.
+-   [x] Update map markers from the same source of state.
 -   [ ] Handle reconnect/disconnect.
 -   [ ] Refetch authoritative data after reconnect.
--   [ ] Do not treat WebSocket state as the backend source of truth.
+-   [x] Do not treat WebSocket state as the backend source of truth.
 
 Desired flow:
 
@@ -706,24 +722,40 @@ TanStack Query cache
 > `mock/realtime.ts`; nothing calls it yet (W9 home / W10 hook wiring). Unticked:
 > Echo/pusher-js singleton (`lib/api/echo.ts` stays dead until Phase B B8) and all
 > subscribe/unsubscribe/cache bullets (W10).
+>
+> W9 2026-09-23: the home now consumes it — `lib/hooks/useRealtimeRequests.ts`
+> subscribes through `subscribeLiveFeed` ONLY while the driver home is focused
+> AND the driver is approved (single subscription via a ref — no duplicates),
+> unsubscribes on leave/unapprove, applies every event to the TanStack cache.
+> `FeedEvent` extended with structured payloads: `new_request` carries a
+> `NearbyRequest` (merged into `queryKeys.nearby.requests`, deduped);
+> `request_claimed` / `request_cancelled` carry `request_id` (dropped from the
+> set + the `detail-for-driver` key invalidated); `offer_update` / `trip_event`
+> are pure notification events. Mock feed rewritten to a scripted ~8s scene
+> (ids 811–815 rotate in/out + seeded 801/802 drain) for visible churn in the
+> max-3 list and markers. Unticked here: `lib/api/echo.ts` singleton wiring
+> (reconnect/disconnect + `disconnectEcho` on logout land with Phase B B8 — the
+> mock source never drops); the live-feed is a cache mutation, never the source
+> of truth (baseline `nearbyRequests` query + detail/browse refetches stay
+> authoritative).
 
 ------------------------------------------------------------------------
 
 ## 11. Driver request interaction
 
--   [ ] Tap map marker → open request detail.
--   [ ] Tap bottom-list item → open request detail.
--   [ ] Show request details.
+-   [x] Tap map marker → open request detail.
+-   [x] Tap bottom-list item → open request detail.
+-   [x] Show request details.
 -   [x] Fetch detail via a `getForDriver` API method — mock-backed in
     Phase A; real driver-accessible endpoint is backend ticket B2.
 -   [x] Replace the current `marketplace/[id].tsx` page-1 `.find()` hack
     when the backend detail endpoint is available (ticket B2).
--   [ ] Allow counter-offer when driver is eligible.
+-   [x] Allow counter-offer when driver is eligible.
 -   [ ] Allow direct acceptance when supported by the backend.
--   [ ] Invalidate/update relevant request and offer queries after an
+-   [x] Invalidate/update relevant request and offer queries after an
     action.
--   [ ] Prevent actions when driver verification is not approved.
--   [ ] Handle request becoming unavailable while the driver is viewing
+-   [x] Prevent actions when driver verification is not approved.
+-   [x] Handle request becoming unavailable while the driver is viewing
     it.
 
 > W6 2026-09-22: `requestsApi.getForDriver(id)` shipped (mock-backed
@@ -732,19 +764,31 @@ TanStack Query cache
 > `marketplace/[id].tsx` page-1 `.find()` hack is gone; it calls
 > `getForDriver` under `queryKeys.requests.detailForDriver(id)`. Unticked:
 > counter-offer/direct-acceptance action flows (W7+).
+>
+> W9 2026-09-23: interaction flows completed — map marker taps and live-list
+> rows both open `/driver/marketplace/{id}` (`openRequest` gated to approved
+> drivers); the detail form is gated (approved → offer form with custom price
+> + message; unapproved → "Vérification en cours" card) so no counter-offer is
+> possible while unverified. Offer `onSuccess` now invalidates browse /
+> browseWithGeo / `nearby.requests` / detail / offers keys. "Became unavailable
+> while viewing": `request_claimed`/`request_cancelled` events invalidate the
+> `detail-for-driver` key → refetch slug falls into the new "Demande
+> indisponible" error state (mock detail throws for non-seed ids; seeds still
+> resolve until B2's authoritative store). Direct acceptance stays unticked —
+> requires a backend action endpoint (Phase B, not in W9 scope).
 
 ------------------------------------------------------------------------
 
 ## 12. Map architecture
 
--   [ ] Keep `BaseMap` domain-agnostic.
--   [ ] Keep map layers presentational.
--   [ ] Create a dedicated client-home map composition.
--   [ ] Create a dedicated driver-home map composition.
--   [ ] Add a `NearbyRequestLayer`.
--   [ ] Reuse `CurrentLocationLayer`.
--   [ ] Reuse `DriversLayer` for the client.
--   [ ] Avoid duplicated MapView implementations.
+-   [x] Keep `BaseMap` domain-agnostic.
+-   [x] Keep map layers presentational.
+-   [x] Create a dedicated client-home map composition.
+-   [x] Create a dedicated driver-home map composition.
+-   [x] Add a `NearbyRequestLayer`.
+-   [x] Reuse `CurrentLocationLayer`.
+-   [x] Reuse `DriversLayer` for the client.
+-   [x] Avoid duplicated MapView implementations.
 -   [ ] Delete `MapRenderer.tsx` and `MapRendererProps.ts` once all
     callers migrate (do not keep them as a permanent shim).
 -   [ ] Remove unused map variants after confirming they are no longer
@@ -753,6 +797,18 @@ TanStack Query cache
     -   `LiveTrackingMap`
     -   `MarketplacePreviewMap`
     -   `TripRouteMap`
+
+> W9 2026-09-23: `components/map/variants/DriverHomeMap.tsx` joins `RequestMap`
+> (W8) as the second dedicated home composition — both are thin compositions of
+> `BaseMap` + presentational layers + `RecenterButton`, no duplicated MapView.
+> New `components/map/layers/NearbyRequestLayer.tsx` (package-chip markers +
+> price badge + pickup→destination callout, tap → parent callback) follows the
+> `DriversLayer` convention and consumes the new `NearbyRequestMarker` type in
+> `core/BaseMapTypes.ts`. `CurrentLocationLayer` is reused by both homes. The
+> W10 deletions stay pending: `MapRenderer.tsx`/`MapRendererProps.ts` shims and
+> `MarketplacePreviewMap`/`TripRouteMap`/`LiveTrackingMap` all still exist on
+> disk but have zero remaining imports (verified project-wide grep) — removal
+> is planned in W10 per `plan.md`.
 
 ------------------------------------------------------------------------
 
@@ -767,12 +823,12 @@ TanStack Query cache
     -   requests
     -   offers
     -   trips
--   [ ] Update cache directly for realtime events where possible.
+-   [x] Update cache directly for realtime events where possible.
 -   [x] Invalidate authoritative queries after mutations.
 -   [ ] Avoid unnecessary polling where WebSocket events provide
     equivalent updates.
--   [ ] Keep polling for data that does not have realtime events yet.
--   [ ] Avoid fetching the same data independently from multiple
+-   [x] Keep polling for data that does not have realtime events yet.
+-   [x] Avoid fetching the same data independently from multiple
     screens.
 
 ------------------------------------------------------------------------
@@ -785,6 +841,16 @@ TanStack Query cache
 > transitions, dashboard toggles). Unticked: realtime cache updates (§10 wires
 > `subscribeLiveFeed` → cache in W9/W10) and polling-reduction trade-offs
 > (behavioral).
+>
+> W9 2026-09-23: realtime cache updates landed — `useRealtimeRequests` reads +
+> writes `queryKeys.nearby.requests` (single cache owner: the driver home's
+> baseline query fetches, the feed mutates it in place, the home derives both
+> markers and the max-3 list from that one source) and appends to
+> `queryKeys.feed.live`. Detail/browse invalidation after an offer submission
+> covers all driver-facing keys. Polling: dashboard summary keeps its 10s poll
+> (no realtime events for it yet — B8), while the nearby set relies on the feed
+> instead of polling. "Avoid unnecessary polling" stays unticked until the real
+> channel exists (Phase B B8).
 
 ------------------------------------------------------------------------
 

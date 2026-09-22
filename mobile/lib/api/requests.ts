@@ -1,7 +1,8 @@
 import { apiClient } from './client';
 import { USE_MOCK } from './config';
 import { offersApi, BrowseRequest } from './offers';
-import { mockBrowseNearby, mockRequestDetailForDriver } from './mock';
+import { mockBrowseNearby, mockNearbyRequests, mockRequestDetailForDriver } from './mock';
+import type { NearbyRequest } from './mock/types';
 
 export interface RequestStop {
   type: 'PICKUP' | 'DESTINATION';
@@ -210,5 +211,25 @@ export const requestsApi = {
       return mockBrowseNearby(page);
     }
     return offersApi.browse(page);
+  },
+
+  /**
+   * Nearby open requests in the geo/marker shape (W9 driver home).
+   *
+   * `browseWithGeo` returns `BrowseRequest` (addresses, no map coordinates),
+   * which can't feed the map markers or the live list — those operate on the
+   * `NearbyRequest` shape (position + addresses + distance). This seam is
+   * mock-backed until the backend ships `GET /requests/nearby` (Phase B);
+   * with the flag off it returns an empty set so nothing breaks.
+   */
+  nearbyRequests: async (
+    page = 1,
+    region?: { latitude: number; longitude: number; radiusKm?: number }
+  ): Promise<NearbyRequest[]> => {
+    if (USE_MOCK) {
+      return mockNearbyRequests(region);
+    }
+    // Phase B: real `GET /requests/nearby` replaces this.
+    return [];
   },
 };

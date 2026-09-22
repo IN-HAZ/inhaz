@@ -32,12 +32,29 @@ export interface NearbyRequest {
 }
 
 /** In-app live feed event (driver home, W9). */
+export type FeedEventType =
+  | "new_request"
+  | "request_claimed"
+  | "request_cancelled"
+  | "offer_update"
+  | "trip_event";
+
 export interface FeedEvent {
   id: string;
-  type: "new_request" | "offer_update" | "trip_event";
+  type: FeedEventType;
   title: string;
   message: string;
   created_at: string;
+  /**
+   * Present on `new_request` — the request that just became available. The
+   * realtime hook merges it into the nearby-requests cache (W9).
+   */
+  request?: NearbyRequest;
+  /**
+   * Present on `request_claimed` / `request_cancelled` — the id to drop from
+   * the nearby set (and refetch if a detail screen is open).
+   */
+  request_id?: number;
 }
 
 /** Result of a mock profile-photo upload. */

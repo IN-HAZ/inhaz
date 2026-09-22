@@ -34,6 +34,18 @@ export interface RouteMarker {
     pinColor?: string;
 }
 
+/** A nearby open request shown on the driver home map (W9). */
+export interface NearbyRequestMarker {
+    id: string;
+    latitude: number;
+    longitude: number;
+    title?: string;
+    pickupAddress?: string;
+    destinationAddress?: string;
+    proposedPriceMAD?: number;
+    distanceM?: number;
+}
+
 // ─── Map style theme ──────────────────────────────────────────────────────────
 
 /**

@@ -3,7 +3,7 @@ import type { NearbyDriver, NearbyRequest } from "./types";
 /** Casablanca-centred fake geolocations, offset around a supplied point. */
 const BASE = { latitude: 33.5731, longitude: -7.5898 };
 
-function offsetPoint(
+export function offsetPoint(
   lat: number,
   lon: number,
   index: number,
