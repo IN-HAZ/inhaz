@@ -99,7 +99,7 @@ export default function RequestsScreen() {
       <View className="flex-row items-center justify-between px-6 pt-14 pb-4 bg-white border-b border-gray-100">
         <Text className="text-2xl font-black text-primary-800">Mes Demandes</Text>
         <TouchableOpacity
-          onPress={() => router.push('/requests/create')}
+          onPress={() => router.push({ pathname: '/', params: { create: '1' } })}
           className="w-10 h-10 bg-primary-800 rounded-xl items-center justify-center"
         >
           <Plus size={20} color="white" />
@@ -116,7 +116,7 @@ export default function RequestsScreen() {
             Créez votre première demande de livraison.
           </Text>
           <TouchableOpacity
-            onPress={() => router.push('/requests/create')}
+            onPress={() => router.push({ pathname: '/', params: { create: '1' } })}
             className="mt-6 bg-primary-800 px-6 py-3 rounded-xl"
           >
             <Text className="text-white font-semibold text-sm">Créer une demande</Text>

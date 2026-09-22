@@ -1,62 +1,165 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useAuthStore } from '@/lib/store/auth';
-import { User, Plus, ListOrdered } from 'lucide-react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as Location from 'expo-location';
+import { Plus, User } from 'lucide-react-native';
+
+import { RequestMap } from '@/components/map/variants/RequestMap';
+import type { BaseMapHandle, MapPoint, Region, NearbyDriverMarker } from '@/components/map/core/BaseMapTypes';
+import { RequestWizard } from '@/components/requests/RequestWizard';
+import type { RequestWizardMapView } from '@/components/requests/types';
+import { driverApi } from '@/lib/api/driver';
+
+const IDLE_DELTA = 0.05;
+
+/** Adapter from the API/mock driver shape to the map marker layer shape. */
+function toDriverMarkers(drivers: Awaited<ReturnType<typeof driverApi.nearbyDrivers>>): NearbyDriverMarker[] {
+  return drivers.map((d) => ({
+    id: String(d.id),
+    latitude: d.position.latitude,
+    longitude: d.position.longitude,
+    vehicleType: d.vehicle,
+    rating: d.rating,
+  }));
+}
 
 /**
- * Client home (W5). Light placeholder — the map-first home lands in W8.
+ * Client home (W8) — map-first.
+ *
+ * Owns the single `RequestMap` instance and the GPS position (requested on
+ * entry, not at boot). The request wizard overlays the SAME map — it never
+ * remounts between wizard steps; the wizard only pushes map-view props up.
  */
 export default function ClientHomeScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const params = useLocalSearchParams<{ create?: string }>();
+
+  const mapRef = useRef<BaseMapHandle | null>(null);
+
+  const [currentLocation, setCurrentLocation] = useState<MapPoint | null>(null);
+  const [homeRegion, setHomeRegion] = useState<Region | null>(null);
+  const [drivers, setDrivers] = useState<NearbyDriverMarker[]>([]);
+
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardView, setWizardView] = useState<RequestWizardMapView | null>(null);
+  const wizardRecenterRef = useRef<((point: MapPoint) => void) | null>(null);
+  const wizardOpenedOnceRef = useRef(false);
+
+  // ── GPS on entry (§7) — never at boot ────────────────────────────────────────
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        if (!alive) return;
+        const pt: MapPoint = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setCurrentLocation(pt);
+        setHomeRegion({ ...pt, latitudeDelta: IDLE_DELTA, longitudeDelta: IDLE_DELTA });
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // ── Nearby drivers from the mock seam, centered on the user ──────────────────
+  useEffect(() => {
+    if (!currentLocation) return;
+    let alive = true;
+    driverApi
+      .nearbyDrivers({ latitude: currentLocation.latitude, longitude: currentLocation.longitude })
+      .then((list) => { if (alive) setDrivers(toDriverMarkers(list)); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [currentLocation]);
+
+  // ── Intent param: /?create=1 auto-opens the wizard (requests list) ───────────
+  useEffect(() => {
+    if (params.create === '1' && !wizardOpenedOnceRef.current) {
+      wizardOpenedOnceRef.current = true;
+      setWizardOpen(true);
+    }
+  }, [params.create]);
+
+  /**
+   * Shared recenter (W8 fix): always re-centers the camera on the current
+   * location — into the wizard camera when it's open, else the idle home view.
+   */
+  const handleRecenter = useCallback((pt: MapPoint) => {
+    setCurrentLocation(pt);
+    if (wizardOpen && wizardRecenterRef.current) {
+      wizardRecenterRef.current(pt);
+    } else {
+      setHomeRegion({ ...pt, latitudeDelta: IDLE_DELTA, longitudeDelta: IDLE_DELTA });
+    }
+  }, [wizardOpen]);
+
+  const handleCloseWizard = useCallback(() => {
+    setWizardOpen(false);
+    setWizardView(null);
+    router.setParams({ create: undefined });
+  }, [router]);
+
+  // The wizard's view wins while open; the idle home view otherwise. When the
+  // wizard has pushed no view yet (first frame), region stays uncontrolled so
+  // the camera does not jump.
+  const mapRegion = wizardOpen ? (wizardView?.region ?? null) : homeRegion;
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-6 pt-14 pb-4 border-b border-gray-100">
-        <View className="flex-row items-center gap-2">
-          <Text className="text-2xl font-black text-primary-800">inHaz</Text>
+      {/* ── The single map instance — never remounted by the wizard ─────────── */}
+      <RequestMap
+        ref={mapRef}
+        region={mapRegion}
+        currentLocation={currentLocation}
+        drivers={drivers}
+        markers={wizardView?.markers ?? []}
+        polyline={wizardView?.polyline ?? []}
+        bottomPadding={wizardView?.bottomPadding ?? 0}
+        showRecenterButton
+        onMapPress={wizardView?.onMapPress}
+        onRecenter={handleRecenter}
+      />
+
+      {/* ── Header (hidden while the wizard overlay is open) ────────────────── */}
+      {!wizardOpen && (
+        <View className="absolute top-0 left-0 right-0 z-10 bg-white/95">
+          <View className="flex-row items-center justify-between px-6 pt-14 pb-4">
+            <Text className="text-2xl font-black text-primary-800">inHaz</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/profile')}
+              className="w-10 h-10 bg-primary-100 rounded-full items-center justify-center"
+            >
+              <User size={20} color="#4B2861" />
+            </TouchableOpacity>
+          </View>
         </View>
-        <TouchableOpacity
-          onPress={() => router.push('/profile')}
-          className="w-10 h-10 bg-primary-100 rounded-full items-center justify-center"
-        >
-          <User size={20} color="#4B2861" />
-        </TouchableOpacity>
-      </View>
+      )}
 
-      {/* Main Content */}
-      <View className="flex-1 items-center justify-center px-6">
-        <View className="w-20 h-20 bg-primary-100 rounded-3xl items-center justify-center mb-6">
-          <Text className="text-primary-800 text-3xl font-black">in</Text>
-        </View>
-
-        <Text className="text-gray-900 text-xl font-bold mb-2">
-          Bienvenue, {user?.name || user?.customer_profile?.name || 'Client'}
-        </Text>
-
-        <Text className="text-gray-500 text-base text-center mb-8">
-          Réservez votre prochaine course de fret en quelques secondes.
-        </Text>
-
-        <View className="flex-row gap-4 w-full">
+      {/* ── "Créer une demande" entry — opens the wizard over the same map ───── */}
+      {!wizardOpen && (
+        <View className="absolute inset-x-0 bottom-6 px-5 z-10">
           <TouchableOpacity
-            onPress={() => router.push('/requests/create')}
-            className="flex-1 bg-primary-800 py-4 rounded-2xl items-center flex-row justify-center gap-2 shadow-sm"
+            onPress={() => setWizardOpen(true)}
+            className="bg-inhaz-purple py-4 rounded-2xl items-center flex-row justify-center gap-2 shadow-lg"
           >
             <Plus size={20} color="white" />
-            <Text className="text-white font-bold text-sm">Nouvelle demande</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push('/requests')}
-            className="flex-1 bg-purple-50 border border-purple-100 py-4 rounded-2xl items-center flex-row justify-center gap-2"
-          >
-            <ListOrdered size={20} color="#4B2861" />
-            <Text className="text-primary-800 font-bold text-sm">Mes demandes</Text>
+            <Text className="text-white font-bold text-sm">Créer une demande</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      )}
+
+      {/* ── The wizard overlay — drives the shared map via onMapViewUpdate ──── */}
+      {wizardOpen && (
+        <RequestWizard
+          mapRef={mapRef}
+          currentLocation={currentLocation}
+          recenterRef={wizardRecenterRef}
+          onCurrentLocationChange={setCurrentLocation}
+          onMapViewUpdate={setWizardView}
+          onClose={handleCloseWizard}
+        />
+      )}
     </View>
   );
 }

@@ -1,24 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   Alert,
   ActivityIndicator,
-  Animated,
   Keyboard,
-  PanResponder,
-  Dimensions,
-  Platform,
 } from 'react-native';
+import type { RefObject } from 'react';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Truck, Bike } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 
-import { RequestMap } from '@/components/map/variants/RequestMap';
-import type { BaseMapHandle as MapRendererHandle, RouteMarker, MapPoint, Region } from '@/components/map/core/BaseMapTypes';
+import type { BaseMapHandle, MapPoint, Region, RouteMarker } from '@/components/map/core/BaseMapTypes';
 import { requestsApi } from '@/lib/api/requests';
 import { fileUriToBlob, putToSignedUrl } from '@/lib/api/files';
 import { getPlaceDetails, reverseGeocode, PlaceSearchResult } from '@/lib/api/geocoding';
@@ -26,21 +21,18 @@ import { getErrorMessage } from '@/lib/api/errors';
 
 import { usePlaceSearch } from '@/lib/hooks/usePlaceSearch';
 import { useCameraPermission } from '@/lib/hooks/useCameraPermission';
-import { StopItem, PhotoItem, VehicleOption } from '@/components/requests/types';
-import { SelectedPinCard } from '@/components/requests/SelectedPinCard';
-import { Step1Locations } from '@/components/requests/Step1Locations';
-import { Step2Package } from '@/components/requests/Step2Package';
-import { Step3Vehicle } from '@/components/requests/Step3Vehicle';
-import { Step4Pricing } from '@/components/requests/Step4Pricing';
-import { Step5Review } from '@/components/requests/Step5Review';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// ── Snap points (distance from top of screen where the sheet starts) ──────────
-const SNAP_PEEK = Math.round(SCREEN_HEIGHT * 0.52); // ~52% from top → map takes top 52%
-const SNAP_MID  = Math.round(SCREEN_HEIGHT * 0.34); // ~34% from top
-const SNAP_FULL = Math.round(SCREEN_HEIGHT * 0.08); // ~8% from top  → almost full form
-const SNAP_POINTS = [SNAP_PEEK, SNAP_MID, SNAP_FULL];
+import type { StopItem, PhotoItem, VehicleOption, RequestWizardMapView } from './types';
+import { SelectedPinCard } from './SelectedPinCard';
+import {
+  RequestWizardSheet,
+  REQUEST_WIZARD_SCREEN_HEIGHT,
+  REQUEST_WIZARD_SNAP_PEEK,
+} from './RequestWizardSheet';
+import { Step1Locations } from './Step1Locations';
+import { Step2Package } from './Step2Package';
+import { Step3Vehicle } from './Step3Vehicle';
+import { Step4Pricing } from './Step4Pricing';
+import { Step5Review } from './Step5Review';
 
 const VEHICLE_OPTIONS: VehicleOption[] = [
   { id: 'moto',         label: 'Moto',         sub: 'Petits colis (< 10 kg)',    icon: Bike  },
@@ -70,12 +62,46 @@ function fitRegion(points: { latitude: number; longitude: number }[]): Region | 
   };
 }
 
-export default function CreateRequestScreen() {
+export interface RequestWizardProps {
+  /** The home's map handle — the wizard only drives the camera, never mounts a map. */
+  mapRef: RefObject<BaseMapHandle | null>;
+  /** The home's current GPS position (requested on home entry, W8 §7). */
+  currentLocation: MapPoint | null;
+  /**
+   * The wizard registers its recenter handler here so the home's shared
+   * RecenterButton drives the wizard camera too (fixed in W8 to always
+   * re-center).
+   */
+  recenterRef: RefObject<((point: MapPoint) => void) | null>;
+  /** Forwards a freshly acquired GPS position back to the home (blue dot). */
+  onCurrentLocationChange: (point: MapPoint) => void;
+  /** Pushes the wizard's map view up — the home applies it to the shared map. */
+  onMapViewUpdate: (view: RequestWizardMapView) => void;
+  /** Step 1 back → close the overlay (the map stays mounted underneath). */
+  onClose: () => void;
+}
+
+/**
+ * RequestWizard (W8) — owns the 5-step request state, draft, validation and
+ * publish, extracted verbatim from `app/(client)/requests/create.tsx`.
+ *
+ * The map lives on the home screen: the wizard records its map view
+ * (markers/polyline/region/bottom padding/map-press handler) and pushes it to
+ * the home via `onMapViewUpdate`, so the map never remounts between steps.
+ */
+export function RequestWizard({
+  mapRef,
+  currentLocation,
+  recenterRef,
+  onCurrentLocationChange,
+  onMapViewUpdate,
+  onClose,
+}: RequestWizardProps) {
   const router   = useRouter();
 
   // Camera permission state machine for package photos (feature-time only).
-  // The same featureKey is reused by the RequestWizard after the W8 refactor so
-  // a permanent denial stays remembered across the move.
+  // The `request-package-photos` key predates W8 (W3) so a permanent denial
+  // stays remembered across the move from the create screen.
   const { state: cameraState, request: requestCamera, openSettings: openCameraSettings } =
     useCameraPermission('request-package-photos');
 
@@ -95,95 +121,19 @@ export default function CreateRequestScreen() {
   const [isSaving,      setIsSaving]      = useState(false);
   const [isPublishing,  setIsPublishing]  = useState(false);
 
-  // ── Map state ─────────────────────────────────────────────────────────────────
-  const [currentLocation, setCurrentLocation] = useState<MapPoint | null>(null);
-  const [flyRegion,       setFlyRegion]       = useState<Region | null>(null);
-  const [selectedPin,     setSelectedPin]     = useState<{ latitude: number; longitude: number; address: string } | null>(null);
+  // Live position used for place-search bias — seeded from the home's GPS (§7)
+  // and refreshed when the user pins "use current location" for a stop.
+  const [liveLocation,  setLiveLocation]  = useState<MapPoint | null>(currentLocation);
+
+  // ── Map view state (drives the home's shared map via onMapViewUpdate) ────────
+  const [flyRegion,     setFlyRegion]     = useState<Region | null>(null);
+  const [selectedPin,   setSelectedPin]   = useState<{ latitude: number; longitude: number; address: string } | null>(null);
   // map bottom padding tells Google Maps the visible area
-  const [mapBottomPad, setMapBottomPad] = useState(SCREEN_HEIGHT - SNAP_PEEK);
-  const mapRef = useRef<MapRendererHandle>(null);
+  const [mapBottomPad, setMapBottomPad] = useState(REQUEST_WIZARD_SCREEN_HEIGHT - REQUEST_WIZARD_SNAP_PEEK);
 
   // ── Search ────────────────────────────────────────────────────────────────────
   const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
-  const { results: searchResults, loading: isSearching, search } = usePlaceSearch(currentLocation);
-
-  // ── Bottom sheet draggable ────────────────────────────────────────────────────
-  const sheetTopAnim    = useRef(new Animated.Value(SNAP_PEEK)).current;
-  const sheetTopRef     = useRef(SNAP_PEEK);   // live value for pan math
-  const dragBaseRef     = useRef(SNAP_PEEK);   // value at the moment touch starts
-  const isKbOpenRef     = useRef(false);
-  const kbHeightRef     = useRef(0);
-
-  // Keep sheetTopRef in sync with animated value
-  useEffect(() => {
-    const id = sheetTopAnim.addListener(({ value }) => { sheetTopRef.current = value; });
-    return () => sheetTopAnim.removeListener(id);
-  }, []);
-
-  const snapSheet = useCallback((target: number) => {
-    const clamped = Math.max(SNAP_FULL, Math.min(SNAP_PEEK, target));
-    Animated.spring(sheetTopAnim, { toValue: clamped, useNativeDriver: false, tension: 80, friction: 12 }).start();
-    // Update map bottom padding when sheet settles
-    setMapBottomPad(SCREEN_HEIGHT - clamped);
-  }, []);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder:  () => true,
-      onMoveShouldSetPanResponder:   (_, gs) => Math.abs(gs.dy) > 4,
-      onPanResponderGrant: () => {
-        dragBaseRef.current = sheetTopRef.current;
-      },
-      onPanResponderMove: (_, gs) => {
-        const next    = dragBaseRef.current + gs.dy;
-        const clamped = Math.max(SNAP_FULL - 30, Math.min(SNAP_PEEK + 30, next));
-        sheetTopAnim.setValue(clamped);
-      },
-      onPanResponderRelease: (_, gs) => {
-        const current = sheetTopRef.current;
-        let target: number;
-
-        if (gs.vy > 0.6) {
-          // Fast swipe down → next lower snap (bigger number = lower on screen)
-          target = SNAP_POINTS.find((p) => p > current + 10) ?? SNAP_PEEK;
-        } else if (gs.vy < -0.6) {
-          // Fast swipe up → next higher snap (smaller number = higher on screen)
-          target = [...SNAP_POINTS].reverse().find((p) => p < current - 10) ?? SNAP_FULL;
-        } else {
-          // Nearest snap point
-          target = SNAP_POINTS.reduce((best, p) =>
-            Math.abs(p - current) < Math.abs(best - current) ? p : best,
-          );
-        }
-
-        const clamped = Math.max(SNAP_FULL, Math.min(SNAP_PEEK, target));
-        Animated.spring(sheetTopAnim, { toValue: clamped, useNativeDriver: false, tension: 80, friction: 12 }).start();
-        setMapBottomPad(SCREEN_HEIGHT - clamped);
-      },
-    }),
-  ).current;
-
-  // Keyboard: expand sheet so inputs stay visible
-  useEffect(() => {
-    const show = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
-        isKbOpenRef.current = true;
-        kbHeightRef.current = e.endCoordinates.height;
-        // Expand to SNAP_FULL so keyboard doesn't cover the form
-        snapSheet(SNAP_FULL);
-      },
-    );
-    const hide = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        isKbOpenRef.current = false;
-        kbHeightRef.current = 0;
-        // Don't auto-collapse — let user decide sheet position
-      },
-    );
-    return () => { show.remove(); hide.remove(); };
-  }, []);
+  const { results: searchResults, loading: isSearching, search } = usePlaceSearch(liveLocation);
 
   // ── Init ──────────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -197,51 +147,45 @@ export default function CreateRequestScreen() {
       } finally {
         if (alive) setIsInitializing(false);
       }
-
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === 'granted') {
-          const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          if (!alive) return;
-          const pt: MapPoint = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-          setCurrentLocation(pt);
-          let addr = '';
-          try { addr = await reverseGeocode(pt.latitude, pt.longitude); } catch {}
-          setStops((prev) => {
-            const u = [...prev];
-            if (u[0] && !u[0].latitude) u[0] = { ...u[0], latitude: pt.latitude, longitude: pt.longitude, address: addr || 'Ma position actuelle' };
-            return u;
-          });
-          setFlyRegion({ latitude: pt.latitude, longitude: pt.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
-        }
-      } catch {}
     }
     init();
     return () => { alive = false; };
   }, []);
 
-  // ── Smart map centering when stops' coords change ────────────────────────────
-  const stopsKey = stops.filter((s) => s.latitude && s.longitude).map((s) => `${s.latitude?.toFixed(4)},${s.longitude?.toFixed(4)}`).join('|');
-
+  // Prefill the pickup stop from the home's GPS position (the home requested it
+  // on entry — the wizard never re-triggers a permission prompt at mount).
   useEffect(() => {
-    const coordStops = stops.filter((s) => s.latitude && s.longitude);
-    if (coordStops.length === 0) return;
+    if (!currentLocation) return;
+    if (stops[0]?.latitude != null || stops[0]?.address.trim() !== '') return;
+    let alive = true;
+    (async () => {
+      const pt = currentLocation;
+      setLiveLocation(pt);
+      let addr = '';
+      try { addr = await reverseGeocode(pt.latitude, pt.longitude); } catch {}
+      if (!alive) return;
+      setStops((prev) => {
+        const u = [...prev];
+        if (u[0] && u[0].latitude == null) {
+          u[0] = { ...u[0], latitude: pt.latitude, longitude: pt.longitude, address: addr || 'Ma position actuelle' };
+        }
+        return u;
+      });
+      if (!alive) return;
+      setFlyRegion({ latitude: pt.latitude, longitude: pt.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLocation]);
 
-    const points = coordStops.map((s) => ({ latitude: s.latitude!, longitude: s.longitude! }));
-
-    if (coordStops.length === 1) {
-      // Center on the single stop
-      setFlyRegion({ latitude: points[0].latitude, longitude: points[0].longitude, latitudeDelta: 0.04, longitudeDelta: 0.04 });
-    } else {
-      // Fit all stops; use fitToCoordinates for accurate padding-aware centering
-      const fit = fitRegion(points);
-      if (fit) setFlyRegion(fit);
-      // Also call fitToCoordinates which respects mapPadding
-      setTimeout(() => {
-        mapRef.current?.fitToCoordinates(points, mapBottomPad);
-      }, 100);
-    }
-  }, [stopsKey]);
+  // Register the recenter bridge used by the home's shared RecenterButton.
+  useEffect(() => {
+    recenterRef.current = (pt: MapPoint) => {
+      setLiveLocation(pt);
+      setFlyRegion({ latitude: pt.latitude, longitude: pt.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+    };
+    return () => { recenterRef.current = null; };
+  }, [recenterRef]);
 
   // ── Stop helpers ──────────────────────────────────────────────────────────────
   const updateStop = (index: number, field: keyof StopItem, value: any) => {
@@ -297,7 +241,8 @@ export default function CreateRequestScreen() {
       if (status !== 'granted') { Alert.alert('Permission refusée', 'Accès à la géolocalisation requis.'); return; }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const pt: MapPoint = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-      setCurrentLocation(pt);
+      setLiveLocation(pt);
+      onCurrentLocationChange(pt);
       let addr = '';
       try { addr = await reverseGeocode(pt.latitude, pt.longitude); } catch {}
       setStops((prev) => {
@@ -352,22 +297,71 @@ export default function CreateRequestScreen() {
     setSelectedPin(null);
   };
 
-  // ── Markers & polyline ────────────────────────────────────────────────────────
-  const mapMarkers: RouteMarker[] = stops
-    .filter((s) => s.latitude && s.longitude)
-    .map((s, visIdx, arr) => ({
-      id: `stop_${stops.indexOf(s)}`,
-      point: { latitude: s.latitude!, longitude: s.longitude! },
-      title: visIdx === 0 ? 'Retrait' : visIdx === arr.length - 1 ? 'Destination' : `Étape ${visIdx}`,
-      description: s.address,
-      pinColor: visIdx === 0 ? '#2563EB' : visIdx === arr.length - 1 ? '#DC2626' : '#F97316',
-    }));
+  // ── Smart map centering when stops' coords change ────────────────────────────
+  const stopsKey = stops.filter((s) => s.latitude && s.longitude).map((s) => `${s.latitude?.toFixed(4)},${s.longitude?.toFixed(4)}`).join('|');
 
-  if (selectedPin) {
-    mapMarkers.push({ id: 'selected_pin', point: { latitude: selectedPin.latitude, longitude: selectedPin.longitude }, title: 'Sélectionné', description: selectedPin.address, pinColor: '#7928CA' });
-  }
+  useEffect(() => {
+    const coordStops = stops.filter((s) => s.latitude && s.longitude);
+    if (coordStops.length === 0) return;
 
-  const mapPolyline: MapPoint[] = stops.filter((s) => s.latitude && s.longitude).map((s) => ({ latitude: s.latitude!, longitude: s.longitude! }));
+    const points = coordStops.map((s) => ({ latitude: s.latitude!, longitude: s.longitude! }));
+
+    if (coordStops.length === 1) {
+      // Center on the single stop
+      setFlyRegion({ latitude: points[0].latitude, longitude: points[0].longitude, latitudeDelta: 0.04, longitudeDelta: 0.04 });
+    } else {
+      // Fit all stops; use fitToCoordinates for accurate padding-aware centering
+      const fit = fitRegion(points);
+      if (fit) setFlyRegion(fit);
+      // Also call fitToCoordinates which respects mapPadding
+      setTimeout(() => {
+        mapRef.current?.fitToCoordinates(points, mapBottomPad);
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopsKey]);
+
+  // ── Markers & polyline + the view pushed up to the home map ──────────────────
+  const mapMarkers = useMemo<RouteMarker[]>(() => {
+    const markers: RouteMarker[] = stops
+      .filter((s) => s.latitude && s.longitude)
+      .map((s, visIdx, arr) => ({
+        id: `stop_${stops.indexOf(s)}`,
+        point: { latitude: s.latitude!, longitude: s.longitude! },
+        title: visIdx === 0 ? 'Retrait' : visIdx === arr.length - 1 ? 'Destination' : `Étape ${visIdx}`,
+        description: s.address,
+        pinColor: visIdx === 0 ? '#2563EB' : visIdx === arr.length - 1 ? '#DC2626' : '#F97316',
+      }));
+
+    if (selectedPin) {
+      markers.push({ id: 'selected_pin', point: { latitude: selectedPin.latitude, longitude: selectedPin.longitude }, title: 'Sélectionné', description: selectedPin.address, pinColor: '#7928CA' });
+    }
+    return markers;
+  }, [stops, selectedPin]);
+
+  const mapPolyline = useMemo<MapPoint[]>(
+    () => stops.filter((s) => s.latitude && s.longitude).map((s) => ({ latitude: s.latitude!, longitude: s.longitude! })),
+    [stops],
+  );
+
+  const mapView = useMemo<RequestWizardMapView>(
+    () => ({
+      region: flyRegion,
+      markers: mapMarkers,
+      polyline: mapPolyline,
+      bottomPadding: mapBottomPad,
+      // Step 1 keeps tap-to-pin; later steps disable map interaction.
+      onMapPress: step === 1 ? handleMapPress : undefined,
+    }),
+    // handleMapPress closes over activeSearchIndex, so recompute with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [flyRegion, mapMarkers, mapPolyline, mapBottomPad, step, activeSearchIndex],
+  );
+
+  // Push the wizard's map view up — the home applies it to the shared map.
+  useEffect(() => {
+    onMapViewUpdate(mapView);
+  }, [mapView, onMapViewUpdate]);
 
   // ── Validation ────────────────────────────────────────────────────────────────
   const anyLocating      = stops.some((s) => s.isLocating);
@@ -491,15 +485,6 @@ export default function CreateRequestScreen() {
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
-  if (isInitializing) {
-    return (
-      <View className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#7928CA" />
-        <Text className="text-gray-500 text-[13px] mt-3">Initialisation de la demande...</Text>
-      </View>
-    );
-  }
-
   const isNextDisabled =
     isSaving ||
     (step === 1 && !canProceedStep1) ||
@@ -507,26 +492,11 @@ export default function CreateRequestScreen() {
     (step === 3 && !canProceedStep3);
 
   return (
-    <View className="flex-1 bg-black">
-
-      {/* ── Full-screen map ──────────────────────────────────────────────────── */}
-      <View className="absolute inset-0">
-        <RequestMap
-          ref={mapRef}
-          region={flyRegion}
-          currentLocation={currentLocation}
-          markers={mapMarkers}
-          polyline={mapPolyline}
-          bottomPadding={mapBottomPad}
-          showRecenterButton
-          onRecenter={(pt) => setCurrentLocation(pt)}
-          onMapPress={handleMapPress}
-        />
-      </View>
+    <View className="absolute inset-0 z-20 bg-black">
 
       {/* ── Back button ──────────────────────────────────────────────────────── */}
       <TouchableOpacity
-        onPress={() => (step > 1 ? setStep(step - 1) : router.back())}
+        onPress={() => (step > 1 ? setStep(step - 1) : onClose())}
         className="absolute top-12 left-4 z-20 bg-white/90 p-2.5 rounded-full shadow-md"
       >
         <ArrowLeft size={20} color="#1F2937" />
@@ -539,113 +509,70 @@ export default function CreateRequestScreen() {
 
       {/* ── Selected pin card (floats in visible map area) ───────────────────── */}
       {selectedPin && (
-        // bottom is an Animated value derived from the sheet position
-        <Animated.View
+        // bottom tracks the sheet: mapBottomPad = screen height - sheet top,
+        // so the card hovers just above the sheet.
+        <View
           className="absolute left-3 right-3 z-[25]"
-          style={{ bottom: Animated.subtract(SCREEN_HEIGHT - SNAP_FULL, sheetTopAnim as any) }}
+          style={{ bottom: mapBottomPad + 12 }}
         >
           <SelectedPinCard
             selectedPin={selectedPin}
             onDismiss={() => setSelectedPin(null)}
             onApply={applySelectedPinToStop}
           />
-        </Animated.View>
+        </View>
       )}
 
       {/* ── Draggable bottom sheet ───────────────────────────────────────────── */}
-      {/* top is the Animated value driving the drag; the rest is Tailwind. */}
-      <Animated.View
-        className="absolute left-0 right-0 bottom-0 bg-white rounded-t-3xl shadow-2xl z-10"
-        style={{ top: sheetTopAnim }}
+      <RequestWizardSheet
+        step={step}
+        showBack={step > 1}
+        isNextDisabled={isNextDisabled}
+        isSaving={isSaving}
+        onNext={handleNextStep}
+        onBack={() => setStep(step - 1)}
+        onSheetTopChange={(top) => setMapBottomPad(REQUEST_WIZARD_SCREEN_HEIGHT - top)}
       >
-
-        {/* Drag handle — responds to pan gestures */}
-        <View className="pt-2.5 pb-2 px-5 border-b border-gray-100" {...panResponder.panHandlers}>
-          <View className="sheet-drag-handle mb-2.5" />
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm font-bold text-gray-900 flex-1">
-              {step === 1 && '1. Adresses & Trajet'}
-              {step === 2 && '2. Colis & Photos'}
-              {step === 3 && '3. Type de Véhicule'}
-              {step === 4 && '4. Budget & Prix proposé'}
-              {step === 5 && '5. Récapitulatif & Publication'}
-            </Text>
-            <View className="flex-row gap-[5px]">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <View
-                  key={s}
-                  className={`h-[7px] rounded ${
-                    s === step
-                      ? 'w-[18px] bg-inhaz-purple'
-                      : s < step
-                        ? 'w-[7px] bg-purple-300'
-                        : 'w-[7px] bg-gray-200'
-                  }`}
-                />
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Scrollable form */}
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-5 pt-3 pb-6"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          onScrollBeginDrag={() => snapSheet(SNAP_FULL)}
-        >
-          {step === 1 && (
-            <Step1Locations
-              stops={stops}
-              activeSearchIndex={activeSearchIndex}
-              searchResults={searchResults}
-              isSearching={isSearching}
-              onAddressInputChange={handleAddressInputChange}
-              onSelectSearchResult={handleSelectSearchResult}
-              onSetActiveSearchIndex={setActiveSearchIndex}
-              onUpdateStopField={updateStop}
-              onAddStop={addStop}
-              onRemoveStop={removeStop}
-              onUseCurrentLocation={useCurrentLocation}
-              onMoveStop={moveStop}
-            />
-          )}
-          {step === 2 && (
-            <Step2Package
-              description={description} weightKg={weightKg} photos={photos}
-              isPhotosUploading={isPhotosUploading} isPhotosFailed={isPhotosFailed}
-              onDescriptionChange={setDescription} onWeightKgChange={setWeightKg}
-              onSelectPhotos={handleSelectPhotos} onRetryUpload={startPhotoUpload} onRemovePhoto={removePhoto}
-            />
-          )}
-          {step === 3 && <Step3Vehicle vehicleOptions={VEHICLE_OPTIONS} selectedVehicleType={vehicleType} onSelectVehicle={setVehicleType} />}
-          {step === 4 && (
-            <Step4Pricing proposedPrice={proposedPrice} onIncreasePrice={() => setProposedPrice((p) => p + 10)} onDecreasePrice={() => setProposedPrice((p) => Math.max(20, p - 10))} />
-          )}
-          {step === 5 && (
-            <Step5Review stops={stops} description={description} weightKg={weightKg} photos={photos} vehicleType={vehicleType} proposedPrice={proposedPrice} isPublishing={isPublishing} onPublish={handlePublish} />
-          )}
-        </ScrollView>
-
-        {/* Nav buttons */}
-        {step < 5 && (
-          <View className={`flex-row items-center justify-between px-5 pt-3 border-t border-gray-100 ${Platform.OS === 'ios' ? 'pb-7' : 'pb-4'}`}>
-            {step > 1 ? (
-              <TouchableOpacity onPress={() => setStep(step - 1)} className="px-5 py-3 rounded-xl border border-gray-300">
-                <Text className="text-gray-700 text-xs font-bold">Retour</Text>
-              </TouchableOpacity>
-            ) : <View />}
-            <TouchableOpacity
-              onPress={handleNextStep}
-              disabled={isNextDisabled}
-              className={`px-7 py-3 rounded-xl ${isNextDisabled ? 'bg-purple-300' : 'bg-inhaz-purple'}`}
-            >
-              {isSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text className="text-white text-xs font-bold">Suivant →</Text>}
-            </TouchableOpacity>
-          </View>
+        {step === 1 && (
+          <Step1Locations
+            stops={stops}
+            activeSearchIndex={activeSearchIndex}
+            searchResults={searchResults}
+            isSearching={isSearching}
+            onAddressInputChange={handleAddressInputChange}
+            onSelectSearchResult={handleSelectSearchResult}
+            onSetActiveSearchIndex={setActiveSearchIndex}
+            onUpdateStopField={updateStop}
+            onAddStop={addStop}
+            onRemoveStop={removeStop}
+            onUseCurrentLocation={useCurrentLocation}
+            onMoveStop={moveStop}
+          />
         )}
-      </Animated.View>
+        {step === 2 && (
+          <Step2Package
+            description={description} weightKg={weightKg} photos={photos}
+            isPhotosUploading={isPhotosUploading} isPhotosFailed={isPhotosFailed}
+            onDescriptionChange={setDescription} onWeightKgChange={setWeightKg}
+            onSelectPhotos={handleSelectPhotos} onRetryUpload={startPhotoUpload} onRemovePhoto={removePhoto}
+          />
+        )}
+        {step === 3 && <Step3Vehicle vehicleOptions={VEHICLE_OPTIONS} selectedVehicleType={vehicleType} onSelectVehicle={setVehicleType} />}
+        {step === 4 && (
+          <Step4Pricing proposedPrice={proposedPrice} onIncreasePrice={() => setProposedPrice((p) => p + 10)} onDecreasePrice={() => setProposedPrice((p) => Math.max(20, p - 10))} />
+        )}
+        {step === 5 && (
+          <Step5Review stops={stops} description={description} weightKg={weightKg} photos={photos} vehicleType={vehicleType} proposedPrice={proposedPrice} isPublishing={isPublishing} onPublish={handlePublish} />
+        )}
+      </RequestWizardSheet>
+
+      {/* ── Init overlay ─────────────────────────────────────────────────────── */}
+      {isInitializing && (
+        <View className="absolute inset-0 z-30 bg-white/95 items-center justify-center">
+          <ActivityIndicator size="large" color="#7928CA" />
+          <Text className="text-gray-500 text-[13px] mt-3">Initialisation de la demande...</Text>
+        </View>
+      )}
     </View>
   );
 }

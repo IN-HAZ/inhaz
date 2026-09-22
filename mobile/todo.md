@@ -526,18 +526,29 @@ Target:
 └──────────────────────┘
 ```
 
--   [ ] Make the client home primarily a map screen.
--   [ ] Request location permission on entry; show current client
+-   [x] Make the client home primarily a map screen.
+-   [x] Request location permission on entry; show current client
     location.
--   [ ] Show nearby available drivers — from the mock data layer in
+-   [x] Show nearby available drivers — from the mock data layer in
     Phase A (real endpoint is backend ticket B3); the layer/marker code
     is identical either way.
--   [ ] Add/reuse `DriversLayer`.
--   [ ] Add a bottom action ("Créer une demande") to start request
+-   [x] Add/reuse `DriversLayer`.
+-   [x] Add a bottom action ("Créer une demande") to start request
     creation.
--   [ ] Keep the map mounted while the request flow is active.
--   [ ] Avoid recreating the map unnecessarily during request steps.
--   [ ] Keep map state/camera stable while the request sheet changes.
+-   [x] Keep the map mounted while the request flow is active.
+-   [x] Avoid recreating the map unnecessarily during request steps.
+-   [x] Keep map state/camera stable while the request sheet changes.
+
+> §7 — `app/(client)/index.tsx` is now the map-first home. It owns the
+> single `RequestMap` instance (BaseMap + CurrentLocationLayer +
+> DriversLayer + route/pin layers), requests GPS on entry (permission +
+> Balanced accuracy, never at boot), auto-centers once, seeds nearby
+> drivers from the mock seam (`driverApi.nearbyDrivers`, mapped to
+> `NearbyDriverMarker[]`; returns `[]` with the mock flag off), and keeps
+> the map mounted while the wizard overlays it. Recenter was fixed (W8):
+> it now always re-centers the camera on the current location instead of
+> the old no-op once a fix had a location. The `/?create=1` intent param
+> (used by the requests list) auto-opens the wizard.
 
 ------------------------------------------------------------------------
 
@@ -553,11 +564,11 @@ Locations
 → Review
 ```
 
--   [ ] Separate request wizard UI/state from the map container.
--   [ ] Move map ownership to the client home screen/container.
--   [ ] Render the request wizard as an overlay/bottom sheet above the
+-   [x] Separate request wizard UI/state from the map container.
+-   [x] Move map ownership to the client home screen/container.
+-   [x] Render the request wizard as an overlay/bottom sheet above the
     existing map — the map does not remount between wizard steps.
--   [ ] Suggested structure (extract from `app/requests/create.tsx`):
+-   [x] Suggested structure (extract from `app/requests/create.tsx`):
 
 ``` text
 components/requests/
@@ -571,21 +582,40 @@ components/requests/
 └── types.ts
 ```
 
--   [ ] Reuse the existing `RequestMap` layers/configuration where
+-   [x] Reuse the existing `RequestMap` layers/configuration where
     appropriate.
--   [ ] Keep the same map instance mounted during the wizard; the wizard
+-   [x] Keep the same map instance mounted during the wizard; the wizard
     receives a handle/interface to drive map interactions for step 1
     only (pickup pin, destination pin, route, location search).
--   [ ] Let later steps reduce/disable map interaction when appropriate.
--   [ ] Preserve the current draft API behavior.
--   [ ] Preserve live `patchStep()` behavior.
--   [ ] Preserve photo upload flow (camera per §3, with retry/failure
+-   [x] Let later steps reduce/disable map interaction when appropriate.
+-   [x] Preserve the current draft API behavior.
+-   [x] Preserve live `patchStep()` behavior.
+-   [x] Preserve photo upload flow (camera per §3, with retry/failure
     states).
--   [ ] Preserve camera/map fitting behavior.
--   [ ] Remove map responsibilities from `requests/create.tsx`.
--   [ ] Delete `app/requests/create.tsx` once migrated — the entry point
+-   [x] Preserve camera/map fitting behavior.
+-   [x] Remove map responsibilities from `requests/create.tsx`.
+-   [x] Delete `app/requests/create.tsx` once migrated — the entry point
     becomes the home button (§7).
--   [ ] Split the current 644-line screen into smaller components/hooks.
+-   [x] Split the current 644-line screen into smaller components/hooks.
+
+> §8 — The 651-line wizard screen was split into `RequestWizard.tsx`
+> (state owner: draft, 5-step state, stops/search/pin-apply, photo
+> capture/upload/retry, `patchStep`, validation, publish) and
+> `RequestWizardSheet.tsx` (draggable bottom sheet, snap points, keyboard,
+> nav buttons) on top of the existing presentational `Step1Locations`…
+> `Step5Review`. The wizard never mounts a map: it receives the home's
+> `mapRef` (fit camera / `fitToCoordinates`) plus `currentLocation`, and
+> pushes a `RequestWizardMapView` (`region`, `markers`, `polyline`,
+> `bottomPadding`, per-step `onMapPress`) up through `onMapViewUpdate` —
+> so the home's map instance is shared, never remounted, and camera
+> behavior matches the old screen (single-stop center, multi-stop
+> fit-to-coordinates with sheet padding). Step 1 keeps tap-to-pin;
+> steps 2–5 disable map taps. `app/(client)/requests/create.tsx` is
+> deleted (tab entry + route types updated); entry points are the home
+> "Créer une demande" button and the requests list via `/?create=1`.
+> ⚠️ Device-verification pending (no emulator): map-first landing,
+> wizard-over-map visuals, snap/keyboard feel, recenter fix,
+> intent-param auto-open.
 
 ------------------------------------------------------------------------
 
