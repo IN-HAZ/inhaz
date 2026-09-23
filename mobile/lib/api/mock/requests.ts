@@ -1,5 +1,4 @@
 import type { BrowseRequest } from "@/lib/api/offers";
-import { mockNearbyRequests } from "./nearby";
 
 function asBrowseRequest(
   id: number,
@@ -68,32 +67,4 @@ export async function mockRequestDetailForDriver(id: number): Promise<BrowseRequ
   const found = DETAILS.find((r) => r.id === id);
   if (!found) throw new Error("Demande introuvable.");
   return found;
-}
-
-/** Geo-scoped browse used by the marketplace/map (mock). */
-export async function mockBrowseNearby(page = 1): Promise<{
-  requests: BrowseRequest[];
-  pagination: { total: number; per_page: number; current_page: number; last_page: number };
-}> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  const requests = mockNearbyRequests().map((r) =>
-    asBrowseRequest(
-      r.id,
-      r.title ?? "Demande à proximité",
-      r.description ?? "",
-      Number(r.proposed_price ?? 0),
-      Number(r.budget_max ?? 100),
-      r.pickup_address,
-      r.destination_address
-    )
-  );
-  return {
-    requests,
-    pagination: {
-      total: requests.length,
-      per_page: 10,
-      current_page: page,
-      last_page: 1,
-    },
-  };
 }

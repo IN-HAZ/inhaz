@@ -8,7 +8,7 @@
  */
 export { mockNearbyDrivers, mockNearbyRequests } from "./nearby";
 export { subscribeMockFeed } from "./feed";
-export { mockRequestDetailForDriver, mockBrowseNearby } from "./requests";
+export { mockRequestDetailForDriver } from "./requests";
 export { mockUploadProfilePhoto } from "./uploads";
 export type {
   NearbyDriver,

@@ -1,7 +1,7 @@
 import { apiClient } from './client';
 import { USE_MOCK } from './config';
 import { offersApi, BrowseRequest } from './offers';
-import { mockBrowseNearby, mockNearbyRequests, mockRequestDetailForDriver } from './mock';
+import { mockNearbyRequests, mockRequestDetailForDriver } from './mock';
 import type { NearbyRequest } from './mock/types';
 
 export interface RequestStop {
@@ -137,47 +137,11 @@ export const requestsApi = {
     return response.data;
   },
 
-  update: async (id: number, payload: Partial<CreateRequestPayload>) => {
-    const response = await apiClient.put<{ message: string; request: DeliveryRequestItem }>(
-      `/requests/${id}`,
-      payload
-    );
-    return response.data;
-  },
-
   cancel: async (id: number, reason: string) => {
     const response = await apiClient.post<{ message: string; request: DeliveryRequestItem }>(
       `/requests/${id}/cancel`,
       { cancellation_reason: reason }
     );
-    return response.data;
-  },
-
-  uploadPhoto: async (requestId: number, file: { uri: string; name: string; type: string }) => {
-    const formData = new FormData();
-    formData.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: file.type,
-    } as unknown as Blob);
-
-    const response = await apiClient.post<{ message: string; photo: RequestPhotoItem }>(
-      `/requests/${requestId}/photos`,
-      formData,
-      { headers: { 'Content-Type': undefined } }
-    );
-    return response.data;
-  },
-
-  listPhotos: async (requestId: number) => {
-    const response = await apiClient.get<{ photos: RequestPhotoItem[] }>(
-      `/requests/${requestId}/photos`
-    );
-    return response.data;
-  },
-
-  deletePhoto: async (photoId: number) => {
-    const response = await apiClient.delete<{ message: string }>(`/request-photos/${photoId}`);
     return response.data;
   },
 
@@ -199,25 +163,10 @@ export const requestsApi = {
   },
 
   /**
-   * Geo-scoped browse (W6 §6.4). The backend accepts geo params with the
-   * Phase B nearby-request ticket; until then it falls back to plain browse
-   * (mock provides the geo shape when the flag is on).
-   */
-  browseWithGeo: async (
-    page = 1,
-    region?: { latitude: number; longitude: number; radiusKm?: number }
-  ): Promise<{ requests: BrowseRequest[]; pagination: Pagination }> => {
-    if (USE_MOCK) {
-      return mockBrowseNearby(page);
-    }
-    return offersApi.browse(page);
-  },
-
-  /**
    * Nearby open requests in the geo/marker shape (W9 driver home).
    *
-   * `browseWithGeo` returns `BrowseRequest` (addresses, no map coordinates),
-   * which can't feed the map markers or the live list — those operate on the
+   * `browse()` returns `BrowseRequest` (addresses, no map coordinates), which
+   * can't feed the map markers or the live list — those operate on the
    * `NearbyRequest` shape (position + addresses + distance). This seam is
    * mock-backed until the backend ships `GET /requests/nearby` (Phase B);
    * with the flag off it returns an empty set so nothing breaks.

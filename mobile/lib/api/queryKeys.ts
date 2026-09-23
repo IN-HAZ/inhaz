@@ -17,7 +17,6 @@
  * - `requests.detail`     single request, client view
  * - `requests.detailForDriver`  single request, driver view (mock-backed until Phase B)
  * - `requests.browse`     marketplace browse (paginated)
- * - `requests.browseWithGeo`    geo-scoped browse (mock-backed until Phase B)
  * - `requests.offers`     offers on a request
  * - `trips.list`          trip list by scope (driver|client) and page
  * - `trips.detail`        single trip (polled during execution)
@@ -49,10 +48,6 @@ export const queryKeys = {
       page = 1,
       params?: { search?: string; budget_min?: number; budget_max?: number }
     ) => ["requests", "browse", page, params] as const,
-    browseWithGeo: (
-      page = 1,
-      params?: { latitude?: number; longitude?: number; radiusKm?: number }
-    ) => ["requests", "browse-geo", page, params] as const,
     offers: (requestId: number) => ["requests", "offers", requestId] as const,
   },
 

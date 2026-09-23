@@ -79,11 +79,4 @@ export const offersApi = {
     );
     return response.data;
   },
-
-  withdrawOffer: async (offerId: number) => {
-    const response = await apiClient.post<{ message: string; offer: OfferItem }>(
-      `/offers/${offerId}/withdraw`
-    );
-    return response.data;
-  },
 };

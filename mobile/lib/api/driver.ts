@@ -33,11 +33,6 @@ export interface DriverProfileItem {
   documents: { id: number; type: string; status: string }[];
 }
 
-export interface VerificationStatus {
-  status: "PENDING" | "APPROVED" | "REJECTED" | null;
-  rejection_reason: string | null;
-}
-
 export interface GeoRegion {
   latitude: number;
   longitude: number;
@@ -97,16 +92,6 @@ export const driverApi = {
       vehicle
     );
     return response.data.vehicle!;
-  },
-
-  /** Verification state, derived from the authoritative `/me` driver_profile. */
-  verificationStatus: async (): Promise<VerificationStatus> => {
-    const response = await apiClient.get<{ user: User }>("/me");
-    const dp = response.data.user.driver_profile;
-    return {
-      status: dp?.status ?? null,
-      rejection_reason: dp?.rejection_reason ?? null,
-    };
   },
 
   /**

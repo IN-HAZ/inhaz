@@ -28,7 +28,6 @@ export default function RequestDetailScreen() {
     onSuccess: () => {
       // Refresh every driver-facing source the home may render.
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.browse() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.requests.browseWithGeo() });
       queryClient.invalidateQueries({ queryKey: queryKeys.nearby.requests });
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.detailForDriver(Number(id)) });
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.offers(Number(id)) });

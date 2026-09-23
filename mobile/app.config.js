@@ -31,14 +31,6 @@ module.exports = ({ config }) => {
                         "Autoriser inHaz à accéder à votre position pour afficher la carte et les livraisons à proximité.",
                 },
             ],
-            [
-                "expo-maps",
-                {
-                    requestLocationPermission: true,
-                    locationPermission:
-                        "Allow $(PRODUCT_NAME) to use your location",
-                },
-            ],
         ],
     };
 };

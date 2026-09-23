@@ -41,17 +41,6 @@ export const authApi = {
     return response.data.user;
   },
 
-  /**
-   * Explicit persona switch for approved drivers. W5 parked the UI until
-   * backend ticket B1; keep the typed call for the future flow.
-   */
-  switchRole: async (role: "client" | "driver"): Promise<User> => {
-    const response = await apiClient.post<{ user: User }>("/auth/switch-role", {
-      role,
-    });
-    return response.data.user;
-  },
-
   logout: async (): Promise<void> => {
     await apiClient.post("/auth/logout");
   },

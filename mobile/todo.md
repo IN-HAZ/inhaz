@@ -789,9 +789,9 @@ TanStack Query cache
 -   [x] Reuse `CurrentLocationLayer`.
 -   [x] Reuse `DriversLayer` for the client.
 -   [x] Avoid duplicated MapView implementations.
--   [ ] Delete `MapRenderer.tsx` and `MapRendererProps.ts` once all
+-   [x] Delete `MapRenderer.tsx` and `MapRendererProps.ts` once all
     callers migrate (do not keep them as a permanent shim).
--   [ ] Remove unused map variants after confirming they are no longer
+-   [x] Remove unused map variants after confirming they are no longer
     needed (delete in this round; recreate from `BaseMap` when a feature
     actually needs them):
     -   `LiveTrackingMap`
@@ -809,6 +809,14 @@ TanStack Query cache
 > `MarketplacePreviewMap`/`TripRouteMap`/`LiveTrackingMap` all still exist on
 > disk but have zero remaining imports (verified project-wide grep) — removal
 > is planned in W10 per `plan.md`.
+>
+> W10 2026-09-23: §15 sweep executed — `MapRenderer.tsx`/`MapRendererProps.ts`
+> shims deleted, `MarketplacePreviewMap`/`TripRouteMap`/`LiveTrackingMap`
+> deleted, `layers/LiveDriverLayer.tsx` deleted (only `LiveTrackingMap` used
+> it). Remaining map surface: `BaseMap`, `BaseMapTypes`, `mapStyles`,
+> `RecenterButton`, layers `CurrentLocationLayer`/`DriversLayer`/
+> `NearbyRequestLayer`/`RouteMarkersLayer`/`PolylineLayer`, variants
+> `RequestMap`/`DriverHomeMap`/`DashboardMap` — every one referenced.
 
 ------------------------------------------------------------------------
 
@@ -902,20 +910,33 @@ TanStack Query cache
 
 After the new flow is working:
 
--   [ ] Remove obsolete `(tabs)` routing and the `two.tsx` redirect stub.
--   [ ] Delete `app/modal.tsx` (see §4).
--   [ ] Delete `app/requests/create.tsx` (see §8).
--   [ ] Delete `components/map/MapRenderer.tsx` and
+-   [x] Remove obsolete `(tabs)` routing and the `two.tsx` redirect stub.
+-   [x] Delete `app/modal.tsx` (see §4).
+-   [x] Delete `app/requests/create.tsx` (see §8).
+-   [x] Delete `components/map/MapRenderer.tsx` and
     `components/map/MapRendererProps.ts` (see §12).
--   [ ] Remove old role redirects duplicated inside screens.
--   [ ] Remove duplicate navigation logic.
--   [ ] Remove unused API methods/hooks.
--   [ ] Remove unused map variants.
--   [ ] Keep pusher-js/laravel-echo dependencies — the realtime infra
+-   [x] Remove old role redirects duplicated inside screens.
+-   [x] Remove duplicate navigation logic.
+-   [x] Remove unused API methods/hooks.
+-   [x] Remove unused map variants.
+-   [x] Keep pusher-js/laravel-echo dependencies — the realtime infra
     uses them; remove dead Echo code only if the realtime architecture
     is dropped.
--   [ ] Remove unused dependencies only after project-wide verification.
--   [ ] Run a project-wide unused import/reference check.
+-   [x] Remove unused dependencies only after project-wide verification.
+-   [x] Run a project-wide unused import/reference check.
+
+> W10 2026-09-23: all §15 bullets done. `(tabs)`/`two.tsx` (W5),
+> `modal.tsx` (W4), `requests/create.tsx` (W8) verified gone from the app
+> tree. Map shims + unused variants/layers deleted (§12 note lists the
+> surviving surface). Dead API methods removed: `authApi.switchRole`,
+> `driverApi.verificationStatus`, `requestsApi.update`/`uploadPhoto`/
+> `listPhotos`/`deletePhoto`/`browseWithGeo` (+ query key +
+> `mockBrowseNearby`), `offersApi.withdrawOffer`; no dead hooks. Unused deps
+> removed: `expo-maps` (plugin block too), `expo-linear-gradient`
+> (`expo-symbols` remains as `expo-router`'s transitive dep). No per-screen
+> role redirects / duplicate navigation remain. `pusher-js`/`laravel-echo` +
+> `lib/api/echo.ts` kept for the Phase B realtime swap. `npx tsc --noEmit`
+> passes; headless `expo export` (Android) bundles cleanly.
 
 ------------------------------------------------------------------------
 
