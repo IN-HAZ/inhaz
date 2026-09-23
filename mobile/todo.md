@@ -1071,6 +1071,11 @@ After the new flow is working:
 > wizard is an in-screen overlay (state on the home route), not a navigable
 > route, so `BackHandler` intercepts `hardwareBackPress` while `wizardOpen`.
 
+> W11 device pass cont. 2026-09-23: 7) client profile rows: only the Email row
+> is clickable (opens an email-only editor); Profil/Téléphone render as static
+> read-only rows; the header pen icon is the sole entry to the full profile
+> form (name + email).
+
 ------------------------------------------------------------------------
 
 # Part B — Backend-coupled tickets (separate `<epic>_<us>` branches)

@@ -34,9 +34,32 @@ function Row({
   label: string;
   value?: string;
   hint?: string;
-  onPress: () => void;
+  onPress?: () => void;
 }) {
-  const showHint = !value && !!hint;
+  const showHint = !value && !!hint && !!onPress;
+  const right = value ? (
+    <Text className="text-[#8A9099] text-[15px] mr-1.5" numberOfLines={1}>
+      {value}
+    </Text>
+  ) : showHint ? (
+    <Text className="text-primary-700 text-[15px] font-medium mr-1.5">{hint}</Text>
+  ) : null;
+  const chevron = (
+    <View className="w-5 h-5 items-center justify-center">
+      <ChevronRight size={17} color="#C4C8CF" />
+    </View>
+  );
+
+  if (!onPress) {
+    return (
+      <View className="flex-row items-center px-4 py-4 bg-white">
+        <View className="w-8 h-8 rounded-[10px] bg-primary-50 items-center justify-center mr-3">{icon}</View>
+        <Text className="text-gray-900 text-[15px] flex-1">{label}</Text>
+        {right}
+      </View>
+    );
+  }
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -45,16 +68,8 @@ function Row({
     >
       <View className="w-8 h-8 rounded-[10px] bg-primary-50 items-center justify-center mr-3">{icon}</View>
       <Text className="text-gray-900 text-[15px] flex-1">{label}</Text>
-      {value ? (
-        <Text className="text-[#8A9099] text-[15px] mr-1.5" numberOfLines={1}>
-          {value}
-        </Text>
-      ) : showHint ? (
-        <Text className="text-primary-700 text-[15px] font-medium mr-1.5">{hint}</Text>
-      ) : null}
-      <View className="w-5 h-5 items-center justify-center">
-        <ChevronRight size={17} color="#C4C8CF" />
-      </View>
+      {right}
+      {chevron}
     </TouchableOpacity>
   );
 }
@@ -80,6 +95,7 @@ export default function ClientProfileScreen() {
   const [email, setEmail] = useState(user?.customer_profile?.email || '');
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
 
   const incomplete = !name.trim() && !email.trim();
   const displayName = user?.customer_profile?.name || user?.name || 'Client';
@@ -108,10 +124,45 @@ export default function ClientProfileScreen() {
     }
   };
 
+  // Full profile edit (name + email) — opened ONLY by the header pen icon.
   const toggleEditing = () => {
     setName(user?.customer_profile?.name || user?.name || '');
     setEmail(user?.customer_profile?.email || '');
+    setEditingEmail(false);
     setEditing((prev) => !prev);
+  };
+
+  // Email-only quick edit — opened by the "Email" row. The other rows
+  // (Profil, Téléphone) are read-only displays.
+  const toggleEmailEditing = () => {
+    setEmail(user?.customer_profile?.email || '');
+    setEditing(false);
+    setEditingEmail((prev) => !prev);
+  };
+
+  const handleSaveEmail = async () => {
+    const trimmed = email.trim();
+    if (trimmed && !/^\S+@\S+\.\S+$/.test(trimmed)) {
+      toast.error('Adresse email invalide');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await authApi.updateProfile({
+        name: user?.customer_profile?.name || user?.name || '',
+        email: trimmed || null,
+      });
+      if (res) {
+        setUser(res);
+        setEmail(res.customer_profile?.email || '');
+      }
+      toast.success('Email enregistré');
+      setEditingEmail(false);
+    } catch (e: any) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -206,14 +257,42 @@ export default function ClientProfileScreen() {
                 </TouchableOpacity>
               </View>
             </View>
+          ) : editingEmail ? (
+            <View className="p-4">
+              <Text className="text-[#6C7078] text-xs mb-1.5">Email</Text>
+              <View className="bg-[#F5F5F7] border border-[#E4E4E7] rounded-lg px-3.5 py-3 mb-5">
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email (optionnel)"
+                  placeholderTextColor="#9CA3AF"
+                  className="text-gray-900 text-sm font-medium p-0"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+              <View className="flex-row gap-2.5">
+                <TouchableOpacity onPress={toggleEmailEditing} activeOpacity={0.7} className="flex-1 bg-[#F2F2F7] rounded-lg py-3.5 items-center">
+                  <Text className="text-gray-600 font-semibold text-sm">Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSaveEmail}
+                  disabled={saving}
+                  activeOpacity={0.85}
+                  className="flex-1 rounded-lg py-3.5 items-center bg-primary-800"
+                >
+                  <Text className="text-white font-semibold text-sm">
+                    {saving ? 'Enregistrement...' : 'Enregistrer'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : (
             <View>
               <Row
                 icon={<User size={16} color={PURPLE_ACCENT} />}
                 label="Profil"
                 value={name}
-                hint="Compléter"
-                onPress={toggleEditing}
               />
               <Divider />
               <Row
@@ -221,14 +300,13 @@ export default function ClientProfileScreen() {
                 label="Email"
                 value={email}
                 hint="Ajouter"
-                onPress={toggleEditing}
+                onPress={toggleEmailEditing}
               />
               <Divider />
               <Row
                 icon={<Phone size={16} color={PURPLE_ACCENT} />}
                 label="Téléphone"
                 value={user?.phone}
-                onPress={toggleEditing}
               />
             </View>
           )}
