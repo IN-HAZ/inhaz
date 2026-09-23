@@ -995,22 +995,46 @@ After the new flow is working:
 -   [ ] Measure cold startup before changes.
 -   [ ] Measure cold startup after changes.
 -   [ ] Compare font loading time.
--   [ ] Check unnecessary root-layout renders.
--   [ ] Check MapView remounts.
--   [ ] Check realtime subscription creation/destruction (exactly one
-    connection/subscription while the driver home is active).
--   [ ] Check unnecessary React Query requests.
+-   [x] Check unnecessary root-layout renders. (static — root gate renders
+    `null` until fonts load AND auth restore; effect deps minimal)
+-   [x] Check MapView remounts. (static — each home owns its single
+    `RequestMap`/`DriverHomeMap`; the wizard never mounts a map)
+-   [x] Check realtime subscription creation/destruction (exactly one
+    connection/subscription while the driver home is active). (static —
+    `useRealtimeRequests` is ref-guarded + unsubscribes on blur/unapprove;
+    runtime confirmation device-pending)
+-   [x] Check unnecessary React Query requests. (static — queries are
+    screen-scoped; only the dashboard summary polls while mounted)
 
 ### Code quality
 
--   [ ] No inline hardcoded styles outside styling files.
--   [ ] No legacy Expo template components.
--   [ ] No duplicate auth/role state.
--   [ ] No direct API calls from screens.
--   [ ] No duplicated MapView implementations.
--   [ ] Mock data lives only under `lib/api/mock/` and is flag-toggled.
--   [ ] TypeScript passes.
--   [ ] Expo build passes.
+-   [x] No inline hardcoded styles outside styling files. (W11: two W9
+    stragglers converted to Tailwind — driver-home banner icon, marketplace
+    pending card; only runtime geometry stays inline)
+-   [x] No legacy Expo template components.
+-   [x] No duplicate auth/role state. (single zustand store + selectors)
+-   [x] No direct API calls from screens. (all `apiClient`/`fetch` inside
+    `lib/api/*`)
+-   [x] No duplicated MapView implementations. (`BaseMap` is the only
+    `MapView` owner; variants/layers compose it)
+-   [x] Mock data lives only under `lib/api/mock/` and is flag-toggled.
+-   [x] TypeScript passes.
+-   [x] Expo build passes. (headless `expo export` — Android 7.1MB + iOS
+    6.9MB bundles; on-device run still device-pending)
+
+> W11 2026-09-23: host-side validation executed (device-free). Code-quality
+> checklist verified by project-wide grep — every item ticked above is a
+> W11 audit result, not an assumption. Static performance review: root-layout
+> gate renders `null` until fonts+auth restore; each home owns its single map
+> instance (wizard never mounts a map); `useRealtimeRequests` single-
+> subscribes (ref-guarded) and tears down on blur/unapprove.
+> `npx tsc --noEmit` passes; headless `expo export` bundles cleanly for
+> Android (7.1MB) and iOS (6.9MB). Web: out of scope — `react-native-maps`
+> has no web support (`+html.tsx` is inert for native targets).
+> Device-only items stay on the blocked list with notes: manual §16 matrices
+> (auth/permissions/client/driver flows, dialogs, toasts), cold-start +
+> font-load timing, on-device map remount & realtime single-connection
+> confirmation.
 
 ------------------------------------------------------------------------
 

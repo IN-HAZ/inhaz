@@ -180,7 +180,9 @@ export default function RequestDetailScreen() {
           </View>
         ) : (
           <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200 items-center">
-            <ShieldAlert size={24} color="#d97706" style={{ marginBottom: 8 }} />
+            <View className="mb-2 items-center">
+              <ShieldAlert size={24} color="#d97706" />
+            </View>
             <Text className="text-gray-900 font-bold text-sm text-center">Vérification en cours</Text>
             <Text className="text-gray-500 text-xs text-center mt-1">
               Votre offre sera disponible après validation de votre compte par notre équipe.

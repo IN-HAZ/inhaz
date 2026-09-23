@@ -251,11 +251,12 @@ export default function DriverHomeScreen() {
           driverStatus === 'REJECTED' ? 'bg-red-50 border border-red-100' : 'bg-amber-50 border border-amber-100'
         }`}>
           <View className="flex-row items-start">
-            <ShieldAlert
-              size={18}
-              color={driverStatus === 'REJECTED' ? '#dc2626' : '#d97706'}
-              style={{ marginTop: 2 }}
-            />
+            <View className="mt-0.5">
+              <ShieldAlert
+                size={18}
+                color={driverStatus === 'REJECTED' ? '#dc2626' : '#d97706'}
+              />
+            </View>
             <View className="flex-1 ml-2.5">
               <Text className={`font-bold text-sm ${
                 driverStatus === 'REJECTED' ? 'text-red-700' : 'text-amber-700'
