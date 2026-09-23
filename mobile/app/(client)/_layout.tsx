@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Home, Package, User } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RoleGuard from '@/components/auth/RoleGuard';
 
 /**
@@ -9,6 +10,9 @@ import RoleGuard from '@/components/auth/RoleGuard';
  * prefix. Detail screens are pushed, not tabs.
  */
 export default function ClientLayout() {
+  // Edge-to-edge (Android 15+): the tab bar must extend over the system
+  // navigation-bar inset, or the system bar overlaps the app's nav bar.
+  const insets = useSafeAreaInsets();
   return (
     <RoleGuard role="client">
       <Tabs
@@ -20,8 +24,8 @@ export default function ClientLayout() {
             backgroundColor: '#fff',
             borderTopWidth: 0,
             elevation: 0,
-            height: 60,
-            paddingBottom: 8,
+            height: 60 + insets.bottom,
+            paddingBottom: 8 + insets.bottom,
             paddingTop: 8,
           },
           tabBarLabelStyle: {

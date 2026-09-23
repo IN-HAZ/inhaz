@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Home, Store, User } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RoleGuard from '@/components/auth/RoleGuard';
 
 /**
@@ -8,6 +9,9 @@ import RoleGuard from '@/components/auth/RoleGuard';
  * (e.g. `/(driver)/profile`); the bare `/` path is the RoleGuard home.
  */
 export default function DriverLayout() {
+  // Edge-to-edge (Android 15+): the tab bar must extend over the system
+  // navigation-bar inset, or the system bar overlaps the app's nav bar.
+  const insets = useSafeAreaInsets();
   return (
     <RoleGuard role="driver">
       <Tabs
@@ -19,8 +23,8 @@ export default function DriverLayout() {
             backgroundColor: '#fff',
             borderTopWidth: 0,
             elevation: 0,
-            height: 60,
-            paddingBottom: 8,
+            height: 60 + insets.bottom,
+            paddingBottom: 8 + insets.bottom,
             paddingTop: 8,
           },
           tabBarLabelStyle: {

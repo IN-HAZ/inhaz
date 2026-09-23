@@ -1058,6 +1058,14 @@ After the new flow is working:
 > matrices, cold-start + font-load timing, realtime single-connection
 > runtime confirmation.
 
+> W11 safe-area pass 2026-09-23: 5) under Android 15 edge-to-edge the system
+> navigation bar overlapped the app's bottom tab bar (both `(client)` and
+> `(driver)` Tabs layouts hardcoded `height: 60`, defeating react-navigation's
+> automatic inset handling) — both layouts now extend over the bottom inset via
+> `useSafeAreaInsets` (`height`/`paddingBottom` += `insets.bottom`). Stack
+> screens use `pt-14` headers for top; `profile`/`dashboard` already wrap in
+> `SafeAreaView`; no bottom-anchored CTAs exist outside the tabs.
+
 ------------------------------------------------------------------------
 
 # Part B — Backend-coupled tickets (separate `<epic>_<us>` branches)
