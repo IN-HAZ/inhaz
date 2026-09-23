@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, BackHandler } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Plus, User } from 'lucide-react-native';
 
@@ -88,6 +88,18 @@ export default function ClientHomeScreen() {
     setWizardView(null);
     router.setParams({ create: undefined });
   }, [router]);
+
+  // Android hardware back while the wizard overlay is open closes the form
+  // instead of exiting the app — the wizard is an in-screen overlay (a state
+  // on this route), not a navigable route, so nothing would pop otherwise.
+  useEffect(() => {
+    if (!wizardOpen) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleCloseWizard();
+      return true; // consume — do not pop/exit
+    });
+    return () => sub.remove();
+  }, [wizardOpen, handleCloseWizard]);
 
   // The wizard's view wins while open; the idle home view otherwise. When the
   // wizard has pushed no view yet (first frame), region stays uncontrolled so

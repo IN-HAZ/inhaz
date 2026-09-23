@@ -1066,6 +1066,11 @@ After the new flow is working:
 > screens use `pt-14` headers for top; `profile`/`dashboard` already wrap in
 > `SafeAreaView`; no bottom-anchored CTAs exist outside the tabs.
 
+> W11 device pass cont. 2026-09-23: 6) Android hardware back while the
+> request wizard is open now closes the form instead of exiting the app — the
+> wizard is an in-screen overlay (state on the home route), not a navigable
+> route, so `BackHandler` intercepts `hardwareBackPress` while `wizardOpen`.
+
 ------------------------------------------------------------------------
 
 # Part B — Backend-coupled tickets (separate `<epic>_<us>` branches)
