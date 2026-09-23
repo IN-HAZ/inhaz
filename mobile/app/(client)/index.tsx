@@ -21,6 +21,11 @@ function toDriverMarkers(drivers: Awaited<ReturnType<typeof driverApi.nearbyDriv
   }));
 }
 
+// Recenter button sits ABOVE the full-width "Créer une demande" CTA (24px
+// bottom inset + ~52px button + 12px gap) so it stays tappable on the idle
+// home; while the wizard is open the sheet's bottomPadding already clears it.
+const RECENTER_IDLE_OFFSET = 88;
+
 /**
  * Client home (W8) — map-first.
  *
@@ -100,6 +105,7 @@ export default function ClientHomeScreen() {
         markers={wizardView?.markers ?? []}
         polyline={wizardView?.polyline ?? []}
         bottomPadding={wizardView?.bottomPadding ?? 0}
+        recenterBottomOffset={wizardOpen ? 0 : RECENTER_IDLE_OFFSET}
         showRecenterButton
         onMapPress={wizardView?.onMapPress}
         onRecenter={handleRecenter}

@@ -969,10 +969,14 @@ After the new flow is working:
 
 ### Client
 
--   [ ] Home map loads.
+-   [x] Home map loads. (device — physical Android; W11 black-canvas
+    regression fixed: `MapView` needs explicit `style={{ flex: 1 }}`, see
+    BaseMap native-sizing whitelist)
 -   [ ] Current location appears.
 -   [ ] Nearby drivers appear.
--   [ ] Request wizard opens above the same map.
+-   [x] Request wizard opens above the same map. (device — wizard overlay
+    was a full-screen `bg-black` view covering the shared map; now
+    transparent + `pointerEvents="box-none"` so step-1 taps reach the map)
 -   [ ] Map does not unnecessarily remount between wizard steps.
 -   [ ] Request can be published successfully.
 
@@ -1035,6 +1039,24 @@ After the new flow is working:
 > (auth/permissions/client/driver flows, dialogs, toasts), cold-start +
 > font-load timing, on-device map remount & realtime single-connection
 > confirmation.
+
+> W11 device pass 2026-09-23 (physical Android, `expo run:android --device`):
+> four device-found refactor regressions fixed + committed — 1) black map
+> canvas: the W1 styling sweep turned `MapView`'s sizing `style={{flex:1}}`
+> into `className="flex-1"`, which NativeWind does not apply to the Fabric
+> native view (explicit `style` restored, still on the §16 geometry
+> whitelist); 2) request wizard's full-screen `bg-black` overlay painted over
+> the single shared map (now transparent + `pointerEvents="box-none"` so the
+> map shows above the sheet and step-1 tap-to-pin works); 3) the W5
+> `(driver)` group rename strips group segments from URLs, leaving 12
+> `router.push("/driver/...")` calls dead (→ `+not-found`) — a stale
+> gitignored `.expo/types/router.d.ts` masked them from tsc until the dev
+> build regenerated it; all call sites now use explicit `/(driver)/...`
+> hrefs; 4) home recenter sat behind the full-width "Créer une demande" CTA
+> (new `recenterBottomOffset` lifts it above) and `HOME_DELTA` 0.05→0.03
+> zooms both homes in. Remaining device-only items: full auth/permissions
+> matrices, cold-start + font-load timing, realtime single-connection
+> runtime confirmation.
 
 ------------------------------------------------------------------------
 

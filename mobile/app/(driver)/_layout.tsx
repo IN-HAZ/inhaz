@@ -3,9 +3,9 @@ import { Home, Store, User } from 'lucide-react-native';
 import RoleGuard from '@/components/auth/RoleGuard';
 
 /**
- * Driver area (W5 §5.2). URLs are unchanged by the group: `/`, `/driver/*`.
- * Documents/dashboard/detail screens are pushed or linked from the home map,
- * not tabs (Accueil map, Marketplace, Profil).
+ * Driver area (W5 §5.2). Route group `(driver)` strips its segment from
+ * URLs, so screens are always pushed with the explicit `/(driver)` prefix
+ * (e.g. `/(driver)/profile`); the bare `/` path is the RoleGuard home.
  */
 export default function DriverLayout() {
   return (

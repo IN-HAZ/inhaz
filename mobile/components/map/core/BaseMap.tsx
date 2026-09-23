@@ -87,9 +87,13 @@ export const BaseMap = forwardRef<BaseMapHandle, BaseMapProps>(
                 : MOROCCO_CENTER);
 
         return (
+            // MapView is a Fabric native view — NativeWind's className→style
+            // interop does not size it; without an explicit style the Android
+            // map renders a black canvas. Inline on purpose (whitelist:
+            // native component sizing, same as RecenterButton's geometry).
             <MapView
                 ref={mapRef}
-                className="flex-1"
+                style={{ flex: 1 }}
                 initialRegion={resolvedInitialRegion}
                 showsUserLocation={false}
                 showsMyLocationButton={false}

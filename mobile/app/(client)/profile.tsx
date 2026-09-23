@@ -260,7 +260,7 @@ export default function ClientProfileScreen() {
                 icon={<Car size={16} color={PURPLE_ACCENT} />}
                 label="Ma candidature"
                 value={driverStatusLabel[driverStatus] ?? driverStatus}
-                onPress={() => router.push('/driver/profile')}
+                onPress={() => router.push('/(driver)/profile')}
               />
               {rejectionReason ? (
                 <View className="px-4 pb-3 bg-red-50/60">

@@ -26,7 +26,7 @@ export default function MarketplaceScreen() {
 
     return (
       <TouchableOpacity
-        onPress={() => router.push(`/driver/marketplace/${item.id}`)}
+        onPress={() => router.push(`/(driver)/marketplace/${item.id}`)}
         className="bg-white mx-6 mb-3 p-4 rounded-2xl border border-gray-100 shadow-sm"
       >
         <View className="flex-row items-center justify-between mb-3">

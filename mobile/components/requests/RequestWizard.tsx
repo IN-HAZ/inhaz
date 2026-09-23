@@ -492,7 +492,10 @@ export function RequestWizard({
     (step === 3 && !canProceedStep3);
 
   return (
-    <View className="absolute inset-0 z-20 bg-black">
+    // Transparent overlay + box-none: the home's map stays visible above the
+    // bottom sheet (single map instance, W8), and map taps fall through so
+    // step 1 can pin stops. Only the sheet / buttons / pin card are touchable.
+    <View className="absolute inset-0 z-20" pointerEvents="box-none">
 
       {/* ── Back button ──────────────────────────────────────────────────────── */}
       <TouchableOpacity

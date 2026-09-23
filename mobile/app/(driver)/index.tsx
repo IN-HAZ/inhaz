@@ -12,7 +12,7 @@ import { queryKeys } from '@/lib/api/queryKeys';
 import { getErrorMessage } from '@/lib/api/errors';
 import { useToast } from '@/components/ui/ToastProvider';
 import { useDriverDashboard } from '@/lib/hooks/useDriverDashboard';
-import { useLocationOnEntry } from '@/lib/hooks/useLocationOnEntry';
+import { useLocationOnEntry, HOME_DELTA } from '@/lib/hooks/useLocationOnEntry';
 import { useRealtimeRequests } from '@/lib/hooks/useRealtimeRequests';
 import { DriverHomeMap } from '@/components/map/variants/DriverHomeMap';
 import type { MapPoint, NearbyRequestMarker } from '@/components/map/core/BaseMapTypes';
@@ -180,14 +180,14 @@ export default function DriverHomeScreen() {
   const handleRecenter = useCallback(
     (pt: MapPoint) => {
       setCurrentLocation(pt);
-      setHomeRegion({ ...pt, latitudeDelta: 0.05, longitudeDelta: 0.05 });
+      setHomeRegion({ ...pt, latitudeDelta: HOME_DELTA, longitudeDelta: HOME_DELTA });
     },
     [setCurrentLocation, setHomeRegion],
   );
 
   const openRequest = useCallback(
     (requestId: string) => {
-      if (isDriverApproved) router.push(`/driver/marketplace/${requestId}`);
+      if (isDriverApproved) router.push(`/(driver)/marketplace/${requestId}`);
     },
     [isDriverApproved, router],
   );
@@ -230,13 +230,13 @@ export default function DriverHomeScreen() {
           </View>
           <View className="flex-row items-center gap-2">
             <TouchableOpacity
-              onPress={() => router.push('/driver/documents')}
+              onPress={() => router.push('/(driver)/documents')}
               className="w-10 h-10 bg-white border border-gray-200 rounded-full items-center justify-center"
             >
               <FileText size={18} color="#4B2861" />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push('/driver/profile')}
+              onPress={() => router.push('/(driver)/profile')}
               className="w-10 h-10 bg-primary-100 rounded-full items-center justify-center"
             >
               <User size={20} color="#4B2861" />
@@ -271,7 +271,7 @@ export default function DriverHomeScreen() {
             </View>
           </View>
           <TouchableOpacity
-            onPress={() => router.push('/driver/documents')}
+            onPress={() => router.push('/(driver)/documents')}
             className="mt-3 self-start bg-white border border-amber-200 px-3 py-1.5 rounded-lg"
           >
             <Text className="text-amber-700 text-xs font-bold">Mes documents</Text>
@@ -304,7 +304,7 @@ export default function DriverHomeScreen() {
                 thumbColor="#FFFFFF"
               />
               <TouchableOpacity
-                onPress={() => router.push('/driver/dashboard')}
+                onPress={() => router.push('/(driver)/dashboard')}
                 className="ml-2.5 flex-row items-center bg-purple-50 px-2.5 py-2 rounded-lg border border-purple-100"
               >
                 <Text className="text-primary-800 text-[11px] font-bold">Résumé</Text>

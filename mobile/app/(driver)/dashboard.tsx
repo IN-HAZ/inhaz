@@ -310,7 +310,7 @@ export default function DriverDashboardScreen() {
                 {/* Marketplace CTA Button */}
                 <View className="px-5 mt-6">
                     <TouchableOpacity
-                        onPress={() => router.push("/driver/marketplace")}
+                        onPress={() => router.push("/(driver)/marketplace")}
                         activeOpacity={0.85}
                         className="py-4 px-6 rounded-2xl flex-row items-center justify-between shadow-lg bg-primary-800"
                     >

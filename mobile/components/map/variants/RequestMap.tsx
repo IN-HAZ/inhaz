@@ -24,6 +24,9 @@ export interface RequestMapProps {
     polyline?: MapPoint[];
     showRecenterButton?: boolean;
     bottomPadding?: number;
+    /** Extra bottom offset (px) for the recenter button — added to
+     * `bottomPadding`, e.g. to clear a floating CTA on the idle home. */
+    recenterBottomOffset?: number;
     onMapPress?: (point: MapPoint) => void;
     onRegionChange?: (region: Region) => void;
     onRecenter?: (point: MapPoint) => void;
@@ -55,6 +58,7 @@ export const RequestMap = forwardRef<BaseMapHandle, RequestMapProps>(
             polyline = [],
             showRecenterButton = true,
             bottomPadding = 0,
+            recenterBottomOffset = 0,
             onMapPress,
             onRegionChange,
             onRecenter,
@@ -107,7 +111,7 @@ export const RequestMap = forwardRef<BaseMapHandle, RequestMapProps>(
                 {showRecenterButton && (
                     <RecenterButton
                         onPress={handleRecenter}
-                        bottomOffset={bottomPadding}
+                        bottomOffset={bottomPadding + recenterBottomOffset}
                     />
                 )}
             </View>

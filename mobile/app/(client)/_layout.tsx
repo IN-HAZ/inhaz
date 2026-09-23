@@ -3,8 +3,10 @@ import { Home, Package, User } from 'lucide-react-native';
 import RoleGuard from '@/components/auth/RoleGuard';
 
 /**
- * Client area (W5 §5.2). URLs are unchanged by the group: `/`, `/requests/*`,
- * `/profile`. Detail screens are pushed, not tabs.
+ * Client area (W5 §5.2). The `(client)` group strips its segment from URLs
+ * (`/requests/*`, `/profile`). Note `(driver)` and `(client)` both strip to
+ * `/profile`, so cross-group jumps use the explicit `/(driver)`/`/(client)`
+ * prefix. Detail screens are pushed, not tabs.
  */
 export default function ClientLayout() {
   return (

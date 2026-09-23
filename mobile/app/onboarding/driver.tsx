@@ -512,7 +512,7 @@ export default function DriverOnboardingScreen() {
                       if (isUploaded && docId) {
                         viewDocument(docId);
                       } else {
-                        router.push(`/driver/documents/upload?type=${doc.type}`);
+                        router.push(`/(driver)/documents/upload?type=${doc.type}`);
                       }
                     }}
                     className={`flex-row items-center p-4 border rounded-2xl ${borderColor} ${bgColor}`}

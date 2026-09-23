@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import * as Location from "expo-location";
 import type { MapPoint, Region } from "@/components/map/core/BaseMapTypes";
 
-/** Default map zoom (lat/lng delta) used by the client + driver homes. */
-export const HOME_DELTA = 0.05;
+/** Home-map zoom (lat/lng delta), used by the client + driver homes.
+ * 0.03 ≈ 3.3 km across at Moroccan latitudes — a modest zoom-in so the
+ * streets around the current location are readable. */
+export const HOME_DELTA = 0.03;
 
 /**
  * Shared "GPS on entry" hook (W9).

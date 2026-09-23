@@ -121,7 +121,7 @@ export default function DocumentListScreen() {
       <View className="px-6 pb-8">
         {!allUploaded && (
           <TouchableOpacity
-            onPress={() => router.push('/driver/documents/upload')}
+            onPress={() => router.push('/(driver)/documents/upload')}
             className="flex-row items-center justify-center bg-primary-800 rounded-2xl py-4 mb-3"
           >
             <Plus size={18} color="white" />
@@ -131,7 +131,7 @@ export default function DocumentListScreen() {
 
         {allUploaded && (
           <TouchableOpacity
-            onPress={() => router.replace('/driver/profile')}
+            onPress={() => router.replace('/(driver)/profile')}
             className="flex-row items-center justify-center bg-primary-800 rounded-2xl py-4 mb-3"
           >
             <CheckCircle size={18} color="white" />

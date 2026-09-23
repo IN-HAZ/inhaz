@@ -71,7 +71,7 @@ export default function DocumentUploadScreen() {
       });
 
       toast.success('Document téléchargé avec succès');
-      router.replace('/driver/documents');
+      router.replace('/(driver)/documents');
     } catch (error: any) {
       toast.error(getErrorMessage(error));
     } finally {
