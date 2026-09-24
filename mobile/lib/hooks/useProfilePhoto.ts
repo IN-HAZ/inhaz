@@ -1,20 +1,13 @@
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useCameraPermission } from '@/lib/hooks/useCameraPermission';
 import { uploadsApi, type UploadFileInput } from '@/lib/api/uploads';
+import { useImagePicker } from '@/lib/hooks/useImagePicker';
 
 export interface ProfilePhotoState {
   uri: string | null;
   fileName: string | null;
 }
-
-const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
-  mediaTypes: ['images'],
-  quality: 0.7,
-  allowsEditing: true,
-  aspect: [1, 1],
-};
 
 export interface UseProfilePhotoResult {
   photo: ProfilePhotoState;
@@ -26,40 +19,45 @@ export interface UseProfilePhotoResult {
 }
 
 /**
- * Profile-photo capture for onboarding (W7 §6.3/§6.4). Camera access is still
- * gated by the W3 state machine (`useCameraPermission`) — permanently denied
- * users only get the Settings path, never a re-opened native dialog. Upload
- * goes through the mock seam until backend ticket B5 ships the real endpoint.
+ * Profile-photo capture for onboarding (W7 §6.3/§6.4). Picking is delegated to
+ * the shared `useImagePicker` hook (which requests the media-library permission
+ * before the gallery opens and recovers Android MainActivity kills). Camera
+ * access stays gated by the W3 state machine (`useCameraPermission`) —
+ * permanently denied users only get the Settings path, never a re-opened
+ * native dialog. Upload goes through the mock seam until backend ticket B5
+ * ships the real endpoint.
  */
 export function useProfilePhoto(featureKey: string): UseProfilePhotoResult {
   const [photo, setPhoto] = useState<ProfilePhotoState>({ uri: null, fileName: null });
   const camera = useCameraPermission(featureKey);
 
-  const pick = useCallback(async (useCamera: boolean): Promise<void> => {
-    try {
-      const source = useCamera
-        ? ImagePicker.launchCameraAsync(PICKER_OPTIONS)
-        : ImagePicker.launchImageLibraryAsync(PICKER_OPTIONS);
-      const result = await source;
-      if (!result.canceled && result.assets?.length) {
-        const asset = result.assets[0];
+  // Avatar: single image, cropped to a square, modest compression.
+  const { pickFromLibrary, pickFromCamera } = useImagePicker({
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.7,
+  });
+
+  const applyPick = useCallback(
+    (result: Awaited<ReturnType<typeof pickFromLibrary>>) => {
+      if (result && !result.canceled && result.images.length > 0) {
+        const asset = result.images[0];
         setPhoto({
           uri: asset.uri,
           fileName: asset.fileName || `avatar_${Date.now()}.jpg`,
         });
       }
-    } catch {
-      Alert.alert('Erreur', 'Impossible de sélectionner la photo');
-    }
-  }, []);
+    },
+    [],
+  );
 
-  const pickFromCamera = useCallback(() => {
-    void pick(true);
-  }, [pick]);
+  const keepPhoto = useCallback(async () => {
+    applyPick(await pickFromLibrary());
+  }, [applyPick, pickFromLibrary]);
 
-  const pickFromLibrary = useCallback(() => {
-    void pick(false);
-  }, [pick]);
+  const takePhoto = useCallback(async () => {
+    applyPick(await pickFromCamera());
+  }, [applyPick, pickFromCamera]);
 
   /** Returns true when the camera is usable; otherwise shows the W3 UX for the current state. */
   const ensureCameraAccess = useCallback(async (): Promise<boolean> => {
@@ -94,19 +92,19 @@ export function useProfilePhoto(featureKey: string): UseProfilePhotoResult {
       "L'accès à la caméra est nécessaire pour prendre votre photo de profil.",
       [
         { text: 'Annuler', style: 'cancel' },
-        { text: 'Réessayer', onPress: pickFromCamera },
+        { text: 'Réessayer', onPress: () => void takePhoto() },
       ],
     );
     return false;
-  }, [camera, pickFromCamera]);
+  }, [camera, takePhoto]);
 
   const chooseSource = useCallback(() => {
     Alert.alert('Photo de profil', 'Choisissez la source de votre photo.', [
       { text: 'Annuler', style: 'cancel' },
-      { text: 'Galerie', onPress: pickFromLibrary },
-      { text: 'Caméra', onPress: () => void ensureCameraAccess() },
+      { text: 'Galerie', onPress: () => void keepPhoto() },
+      { text: 'Caméra', onPress: () => void ensureCameraAccess().then((ok) => { if (ok) void takePhoto(); }) },
     ]);
-  }, [pickFromLibrary, ensureCameraAccess]);
+  }, [keepPhoto, ensureCameraAccess, takePhoto]);
 
   const upload = useCallback(async (): Promise<{ url: string } | null> => {
     if (!photo.uri || !photo.fileName) return null;

@@ -10,7 +10,6 @@ import {
 import type { RefObject } from 'react';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Truck, Bike } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 
 import type { BaseMapHandle, MapPoint, Region, RouteMarker } from '@/components/map/core/BaseMapTypes';
@@ -21,6 +20,7 @@ import { getErrorMessage } from '@/lib/api/errors';
 
 import { usePlaceSearch } from '@/lib/hooks/usePlaceSearch';
 import { useCameraPermission } from '@/lib/hooks/useCameraPermission';
+import { useImagePicker } from '@/lib/hooks/useImagePicker';
 import type { StopItem, PhotoItem, VehicleOption, RequestWizardMapView } from './types';
 import { SelectedPinCard } from './SelectedPinCard';
 import {
@@ -104,6 +104,10 @@ export function RequestWizard({
   // stays remembered across the move from the create screen.
   const { state: cameraState, request: requestCamera, openSettings: openCameraSettings } =
     useCameraPermission('request-package-photos');
+
+  // Shared gallery/camera picker (requests the media-library permission and
+  // recovers Android MainActivity kills — see useImagePicker).
+  const { pickFromLibrary, pickFromCamera } = useImagePicker({ quality: 0.8 });
 
   const [draftId,       setDraftId]       = useState<number | null>(null);
   const [step,          setStep]          = useState(1);
@@ -443,10 +447,11 @@ export function RequestWizard({
       if (useCamera && !(await ensureCameraAccess())) {
         return;
       }
-      const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8, allowsMultipleSelection: !useCamera };
-      const result = useCamera ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
-      if (!result.canceled && result.assets?.length > 0) {
-        const items: PhotoItem[] = result.assets.map((a, i) => ({ id: `${Date.now()}_${i}`, uri: a.uri, fileName: a.fileName || `cargo_${Date.now()}_${i}.jpg`, status: 'selected' }));
+      const picked = useCamera
+        ? await pickFromCamera()
+        : await pickFromLibrary({ multiple: true });
+      if (picked && !picked.canceled && picked.images.length > 0) {
+        const items: PhotoItem[] = picked.images.map((a, i) => ({ id: `${Date.now()}_${i}`, uri: a.uri, fileName: a.fileName || `cargo_${Date.now()}_${i}.jpg`, status: 'selected' }));
         setPhotos((prev) => [...prev, ...items]);
         items.forEach(startPhotoUpload);
       }

@@ -1076,6 +1076,18 @@ After the new flow is working:
 > read-only rows; the header pen icon is the sole entry to the full profile
 > form (name + email).
 
+> W11 device pass cont. 2026-09-24: 8) gallery opened EMPTY ("no photos to
+> select") on Android 13+ — the app manifest never declared READ_MEDIA_*
+> (expo-image-picker only ships legacy storage perms + the system photo
+> picker), so the content-picker fallback could not enumerate photos. Fixed at
+> two layers: `app.json` `android.permissions` now declares
+> READ_MEDIA_IMAGES/VIDEO/VISUAL_USER_SELECTED (native rebuild required), and
+> new shared hook `lib/hooks/useImagePicker.ts` (best-effort media-library
+> permission request before the gallery, `getPendingResultAsync` recovery for
+> Android MainActivity kills, allowsEditing×allowsMultipleSelection
+> exclusivity) now backs BOTH the onboarding profile photo and the wizard
+> package photos — the two places that previously hand-rolled the picker.
+
 ------------------------------------------------------------------------
 
 # Part B — Backend-coupled tickets (separate `<epic>_<us>` branches)
