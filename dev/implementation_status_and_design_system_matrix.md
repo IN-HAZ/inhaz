@@ -7,9 +7,24 @@
 
 ---
 
-## 📋 Phase A Refactor Log — Mobile (branch `refactor_phase_a`)
+## 📋 Phase A Refactor Log (branch `refactor_phase_a`)
 
-Mobile-only refactor per `mobile/plan.md` / `mobile/todo.md`. No feature/API changes; backend untouched. Running log:
+**Scope:** mobile refactor (W1–W11) per `mobile/plan.md` / `mobile/todo.md`, **plus** backend work for the request-creation wizard. The backend changes are listed in §2 below and were carried in the same branch; they are not a mobile-only change.
+
+### Backend changes in this branch
+
+| Area | Change | Files |
+| :--- | :--- | :--- |
+| **Wizard step API** | New `PATCH /requests/{id}` (`patchStep`) persisting one wizard step at a time (`locations`/`package`/`vehicle`/`pricing`), draft-only, whitelisted fields per step | `DeliveryRequestController.php`, `DeliveryRequestService.php` |
+| **Direct-to-S3 photo upload** | `POST /requests/{id}/photos/presigned-urls` + `POST /requests/{id}/photos/confirm`; wizard uploads straight to object storage instead of proxying bytes through the API | `RequestPhotoController.php`, `RequestPhotoResource.php` |
+| **Schema** | `vehicle_type` column on `delivery_requests` (nullable, after `package_dimensions`) | `2026_09_08_000000_add_vehicle_type_to_delivery_requests_table.php`, `DeliveryRequest.php` |
+| **Publish validation** | `publish()` now requires ≥1 `PICKUP` + ≥1 `DESTINATION`, a description, a `vehicle_type`, and a proposed price ≥ 20 MAD | `DeliveryRequestService.php` |
+| **Dependencies** | `aws/aws-sdk-php` added for presigned URL generation | `backend/composer.json`, `backend/composer.lock` |
+| **Infra / repo hygiene** | Per-directory `.env` bootstrap and simplified dev-only Compose stack; root `.gitignore` split into per-directory ignores | `infra/`, `.gitignore`, `backend/.gitignore`, `mobile/.gitignore` |
+
+### Mobile refactor (W1–W11)
+
+Running log:
 
 | WS | Scope | Status |
 | :--- | :--- | :--- |
