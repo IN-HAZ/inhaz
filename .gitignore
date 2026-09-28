@@ -1,16 +1,6 @@
-# Dependencies
-node_modules/
-vendor/
-
-# Environment files — commit .env.example, never .env
 .env
 .env.local
 .env.*.local
-
-# Expo & React Native
-.expo/
-dist/
-web-build/
 
 # IDE & Tooling
 .vscode/
@@ -18,32 +8,3 @@ web-build/
 .DS_Store
 .claude/
 token-optimizer/
-
-# Laravel storage & cache
-backend/storage/app/public/*
-!backend/storage/app/public/.gitignore
-backend/storage/framework/cache/*
-backend/storage/framework/sessions/*
-backend/storage/framework/views/*
-backend/storage/logs/*
-backend/bootstrap/cache/*
-backend/.env
-
-# Mobile
-mobile/node_modules/
-mobile/.expo/
-mobile/dist/
-mobile/android/.gradle
-mobile/android/app/build
-mobile/ios/Pods
-mobile/ios/build
-mobile/.env
-
-# Infra
-infra/.env
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
+import * as Linking from 'expo-linking';
 
 export interface PermissionStatusSummary {
   location: boolean;
@@ -61,4 +63,45 @@ export function useAppPermissions(enabled = true) {
   }, [enabled]);
 
   return { permissionsGranted };
+}
+
+// ── Camera (feature-time only) ─────────────────────────────────────────────────
+// Used by the web: `requestCameraPermission`/`getCameraPermission` wrap the
+// expo-image-picker permission APIs. Nothing here runs at app boot — camera
+// access is requested from the camera touchpoints (wizard package photos today,
+// profile photo capture in onboarding).
+
+/** Asks the OS for camera access. Returns the full PermissionResponse. */
+export function requestCameraPermission() {
+  return ImagePicker.requestCameraPermissionsAsync();
+}
+
+/** Reads the current camera permission without opening any dialog. */
+export function getCameraPermission() {
+  return ImagePicker.getCameraPermissionsAsync();
+}
+
+// ── Media library (feature-time only) ──────────────────────────────────────────
+// On modern Android (photo picker) and iOS (PHPicker) the system picker works
+// without a permission grant, so these are best-effort helpers: the gallery
+// path may skip a blocking check; they are required when the picker must read
+// the original asset or on older platforms.
+
+/** Asks the OS for media-library access. Returns the full PermissionResponse. */
+export function requestMediaLibraryPermission() {
+  return ImagePicker.requestMediaLibraryPermissionsAsync();
+}
+
+/** Reads the current media-library permission without opening any dialog. */
+export function getMediaLibraryPermission() {
+  return ImagePicker.getMediaLibraryPermissionsAsync();
+}
+
+// ── Native settings ────────────────────────────────────────────────────────────
+/**
+ * Opens the native settings screen for this app. Used after a permission has
+ * been permanently denied ("blocked") so the user can re-enable it.
+ */
+export function openAppSettings() {
+  return Linking.openSettings();
 }

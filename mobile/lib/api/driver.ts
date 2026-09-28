@@ -1,4 +1,8 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
+import { USE_MOCK } from "./config";
+import { mockNearbyDrivers } from "./mock";
+import type { NearbyDriver } from "./mock/types";
+import type { User } from "@/lib/store/auth";
 
 export interface DashboardSummaryResponse {
   is_online: boolean;
@@ -14,18 +18,92 @@ export interface ToggleOnlineResponse {
   is_online: boolean;
 }
 
+export interface DriverProfileItem {
+  id: number;
+  status: string;
+  approved_at: string | null;
+  rejection_reason: string | null;
+  vehicle: {
+    brand: string;
+    model: string;
+    registration_number: string;
+    /** Backend column is ticket B6; sent as an extra field, not returned yet. */
+    color?: string;
+  } | null;
+  documents: { id: number; type: string; status: string }[];
+}
+
+export interface GeoRegion {
+  latitude: number;
+  longitude: number;
+  radiusKm?: number;
+}
+
+/**
+ * Driver API (W6 §6.3). Owns the driver persona calls — screens never touch
+ * `apiClient` directly. `nearbyDrivers` is mock-backed until the backend
+ * ships the nearby endpoint (Phase B).
+ */
 export const driverApi = {
   getDashboardSummary: async (): Promise<DashboardSummaryResponse> => {
-    const response = await apiClient.get<DashboardSummaryResponse>('/driver/dashboard-summary');
+    const response = await apiClient.get<DashboardSummaryResponse>(
+      "/driver/dashboard-summary"
+    );
     return response.data;
   },
 
   toggleOnline: async (): Promise<ToggleOnlineResponse> => {
-    const response = await apiClient.post<ToggleOnlineResponse>('/driver/toggle-online');
+    const response = await apiClient.post<ToggleOnlineResponse>(
+      "/driver/toggle-online"
+    );
     return response.data;
   },
 
   updateLocation: async (latitude: number, longitude: number): Promise<void> => {
-    await apiClient.post('/driver/location', { latitude, longitude });
+    await apiClient.post("/driver/location", { latitude, longitude });
+  },
+
+  /** Submit the driver application; returns the created driver_profile. */
+  apply: async (): Promise<{ user?: User; driver_profile: DriverProfileItem }> => {
+    const response = await apiClient.post<{
+      user?: User;
+      driver_profile: DriverProfileItem;
+    }>("/driver/apply");
+    return response.data;
+  },
+
+  /** Full driver profile (vehicle + documents + status). */
+  getProfile: async (): Promise<DriverProfileItem> => {
+    const response = await apiClient.get<{ driver_profile: DriverProfileItem }>(
+      "/driver/profile"
+    );
+    return response.data.driver_profile;
+  },
+
+  saveVehicle: async (vehicle: {
+    brand: string;
+    model: string;
+    registration_number: string;
+    /** Extra field — backend `color` column is ticket B6 (ignored for now). */
+    color?: string;
+  }): Promise<{ brand: string; model: string; registration_number: string; color?: string }> => {
+    const response = await apiClient.post<{ vehicle: DriverProfileItem["vehicle"] }>(
+      "/driver/vehicle",
+      vehicle
+    );
+    return response.data.vehicle!;
+  },
+
+  /**
+   * Drivers near a point (map markers, W9). Mock-backed until the backend
+   * ships `GET /driver/nearby` (Phase B); the real branch stays empty so
+   * nothing breaks with the flag off.
+   */
+  nearbyDrivers: async (region?: GeoRegion): Promise<NearbyDriver[]> => {
+    if (USE_MOCK) {
+      return mockNearbyDrivers(region);
+    }
+    // Phase B ticket replaces this with the real endpoint call.
+    return [];
   },
 };

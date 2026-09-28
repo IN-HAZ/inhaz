@@ -56,10 +56,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/', [DeliveryRequestController::class, 'store']);
         Route::get('/{deliveryRequest}', [DeliveryRequestController::class, 'show']);
         Route::put('/{deliveryRequest}', [DeliveryRequestController::class, 'update']);
+        Route::patch('/{deliveryRequest}', [DeliveryRequestController::class, 'patchStep']);
         Route::delete('/{deliveryRequest}', [DeliveryRequestController::class, 'destroy']);
         Route::post('/{deliveryRequest}/publish', [DeliveryRequestController::class, 'publish']);
         Route::post('/{deliveryRequest}/cancel', [DeliveryRequestController::class, 'cancel']);
 
+        Route::post('/{deliveryRequest}/photos/presigned-urls', [RequestPhotoController::class, 'presignedUrls']);
+        Route::post('/{deliveryRequest}/photos/confirm', [RequestPhotoController::class, 'confirm']);
         Route::post('/{deliveryRequest}/photos', [RequestPhotoController::class, 'store']);
         Route::get('/{deliveryRequest}/photos', [RequestPhotoController::class, 'index']);
 

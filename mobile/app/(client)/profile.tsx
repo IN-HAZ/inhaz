@@ -1,0 +1,374 @@
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { authApi } from '@/lib/api/auth';
+import { useAuthStore, useRole } from '@/lib/store/auth';
+import { useToast } from '@/components/ui/ToastProvider';
+import { getErrorMessage } from '@/lib/api/errors';
+import { User, ChevronRight, LogOut, Car, Mail, Phone, Pencil, Sparkles, FileText } from 'lucide-react-native';
+
+const PURPLE = '#4B2861';
+const PURPLE_ACCENT = '#7C2DF5';
+
+const sectionLabel = 'text-[13px] text-[#6C7078] font-medium px-4 mt-6 mb-2';
+
+function Divider({ inset = true }: { inset?: boolean }) {
+  return <View className={`h-px bg-[#EDEDF0] ${inset ? 'ml-[60px]' : ''}`} />;
+}
+
+function Row({
+  icon,
+  label,
+  value,
+  hint,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string;
+  hint?: string;
+  onPress?: () => void;
+}) {
+  const showHint = !value && !!hint && !!onPress;
+  const right = value ? (
+    <Text className="text-[#8A9099] text-[15px] mr-1.5" numberOfLines={1}>
+      {value}
+    </Text>
+  ) : showHint ? (
+    <Text className="text-primary-700 text-[15px] font-medium mr-1.5">{hint}</Text>
+  ) : null;
+  const chevron = (
+    <View className="w-5 h-5 items-center justify-center">
+      <ChevronRight size={17} color="#C4C8CF" />
+    </View>
+  );
+
+  if (!onPress) {
+    return (
+      <View className="flex-row items-center px-4 py-4 bg-white">
+        <View className="w-8 h-8 rounded-[10px] bg-primary-50 items-center justify-center mr-3">{icon}</View>
+        <Text className="text-gray-900 text-[15px] flex-1">{label}</Text>
+        {right}
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      className="flex-row items-center px-4 py-4 bg-white active:bg-[#FAFAFA]"
+    >
+      <View className="w-8 h-8 rounded-[10px] bg-primary-50 items-center justify-center mr-3">{icon}</View>
+      <Text className="text-gray-900 text-[15px] flex-1">{label}</Text>
+      {right}
+      {chevron}
+    </TouchableOpacity>
+  );
+}
+
+const driverStatusLabel: Record<string, string> = {
+  PENDING: 'En attente',
+  REJECTED: 'Rejeté',
+  APPROVED: 'Approuvé',
+};
+
+/**
+ * Client profile (W5). Lives in the `(client)` group; the driver application
+ * state comes from the auth store (`/me` → `driver_profile`), never from a
+ * duplicate screen fetch.
+ */
+export default function ClientProfileScreen() {
+  const router = useRouter();
+  const { user, setUser, logout } = useAuthStore();
+  const { driverStatus } = useRole();
+  const toast = useToast();
+
+  const [name, setName] = useState(user?.customer_profile?.name || user?.name || '');
+  const [email, setEmail] = useState(user?.customer_profile?.email || '');
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+
+  const incomplete = !name.trim() && !email.trim();
+  const displayName = user?.customer_profile?.name || user?.name || 'Client';
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error('Veuillez entrer votre nom');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await authApi.updateProfile({ name: name.trim(), email: email.trim() || null });
+      if (res) {
+        setUser(res);
+        setName(res.customer_profile?.name || res.name || '');
+        setEmail(res.customer_profile?.email || '');
+      }
+      toast.success('Profil enregistré');
+      setEditing(false);
+      router.replace('/(client)');
+    } catch (e: any) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Full profile edit (name + email) — opened ONLY by the header pen icon.
+  const toggleEditing = () => {
+    setName(user?.customer_profile?.name || user?.name || '');
+    setEmail(user?.customer_profile?.email || '');
+    setEditingEmail(false);
+    setEditing((prev) => !prev);
+  };
+
+  // Email-only quick edit — opened by the "Email" row. The other rows
+  // (Profil, Téléphone) are read-only displays.
+  const toggleEmailEditing = () => {
+    setEmail(user?.customer_profile?.email || '');
+    setEditing(false);
+    setEditingEmail((prev) => !prev);
+  };
+
+  const handleSaveEmail = async () => {
+    const trimmed = email.trim();
+    if (trimmed && !/^\S+@\S+\.\S+$/.test(trimmed)) {
+      toast.error('Adresse email invalide');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await authApi.updateProfile({
+        name: user?.customer_profile?.name || user?.name || '',
+        email: trimmed || null,
+      });
+      if (res) {
+        setUser(res);
+        setEmail(res.customer_profile?.email || '');
+      }
+      toast.success('Email enregistré');
+      setEditingEmail(false);
+    } catch (e: any) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/auth/login');
+  };
+
+  const rejectionReason = driverStatus === 'REJECTED' ? user?.driver_profile?.rejection_reason : null;
+
+  return (
+    <SafeAreaView className="flex-1 bg-[#F2F2F7]">
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
+        {/* ===== Header ===== */}
+        <View className="items-center pt-8 pb-5 bg-white border-b border-[#EFEFF0]">
+          <TouchableOpacity
+            onPress={toggleEditing}
+            activeOpacity={0.7}
+            className="absolute right-4 top-7 w-10 h-10 rounded-full bg-primary-50 border border-primary-100 items-center justify-center"
+          >
+            <Pencil size={15} color={PURPLE} />
+          </TouchableOpacity>
+
+          <View className="w-[88px] h-[88px] rounded-full bg-primary-100 items-center justify-center border-4 border-white shadow-lg shadow-primary-800/15">
+            <Text className="text-primary-800 text-3xl font-extrabold">{initial}</Text>
+          </View>
+          <View className="flex-row items-center mt-3.5">
+            <Text className="text-gray-900 text-[19px] font-bold">{displayName}</Text>
+            <View className="ml-2 flex-row items-center rounded-full bg-primary-50 pl-2 pr-3 py-1">
+              <View className="w-1.5 h-1.5 rounded-full bg-primary-500 mr-1.5" />
+              <Text className="text-primary-700 text-[11px] font-semibold">Client</Text>
+            </View>
+          </View>
+          <Text className="text-gray-500 text-sm mt-1">{user?.phone}</Text>
+        </View>
+
+        {/* ===== First-run note ===== */}
+        {incomplete && (
+          <View className="mx-4 mt-4 flex-row items-start bg-primary-50 rounded-2xl p-4">
+            <View className="w-9 h-9 rounded-[10px] bg-white items-center justify-center mr-3">
+              <Sparkles size={15} color={PURPLE} />
+            </View>
+            <View className="flex-1">
+              <Text className="text-primary-900 font-bold text-sm">Bienvenue sur inHaz !</Text>
+              <Text className="text-primary-800/80 text-[13px] leading-5 mt-0.5">
+                Complétez votre profil pour finaliser votre inscription.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* ===== Compte ===== */}
+        <Text className={sectionLabel}>Mon compte</Text>
+        <View className="mx-4 bg-white rounded-2xl border border-[#EDEDF0] overflow-hidden">
+          {editing ? (
+            <View className="p-4">
+              <Text className="text-[#6C7078] text-xs mb-1.5">Nom</Text>
+              <View className="bg-[#F5F5F7] border border-[#E4E4E7] rounded-lg px-3.5 py-3 mb-3.5">
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Nom complet"
+                  placeholderTextColor="#9CA3AF"
+                  className="text-gray-900 text-sm font-medium p-0"
+                  autoCapitalize="words"
+                />
+              </View>
+              <Text className="text-[#6C7078] text-xs mb-1.5">Email</Text>
+              <View className="bg-[#F5F5F7] border border-[#E4E4E7] rounded-lg px-3.5 py-3 mb-5">
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email (optionnel)"
+                  placeholderTextColor="#9CA3AF"
+                  className="text-gray-900 text-sm font-medium p-0"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+              <View className="flex-row gap-2.5">
+                <TouchableOpacity onPress={toggleEditing} activeOpacity={0.7} className="flex-1 bg-[#F2F2F7] rounded-lg py-3.5 items-center">
+                  <Text className="text-gray-600 font-semibold text-sm">Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSave}
+                  disabled={saving}
+                  activeOpacity={0.85}
+                  className="flex-1 rounded-lg py-3.5 items-center bg-primary-800"
+                >
+                  <Text className="text-white font-semibold text-sm">
+                    {saving ? 'Enregistrement...' : 'Enregistrer'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : editingEmail ? (
+            <View className="p-4">
+              <Text className="text-[#6C7078] text-xs mb-1.5">Email</Text>
+              <View className="bg-[#F5F5F7] border border-[#E4E4E7] rounded-lg px-3.5 py-3 mb-5">
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email (optionnel)"
+                  placeholderTextColor="#9CA3AF"
+                  className="text-gray-900 text-sm font-medium p-0"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+              <View className="flex-row gap-2.5">
+                <TouchableOpacity onPress={toggleEmailEditing} activeOpacity={0.7} className="flex-1 bg-[#F2F2F7] rounded-lg py-3.5 items-center">
+                  <Text className="text-gray-600 font-semibold text-sm">Annuler</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSaveEmail}
+                  disabled={saving}
+                  activeOpacity={0.85}
+                  className="flex-1 rounded-lg py-3.5 items-center bg-primary-800"
+                >
+                  <Text className="text-white font-semibold text-sm">
+                    {saving ? 'Enregistrement...' : 'Enregistrer'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View>
+              <Row
+                icon={<User size={16} color={PURPLE_ACCENT} />}
+                label="Profil"
+                value={name}
+              />
+              <Divider />
+              <Row
+                icon={<Mail size={16} color={PURPLE_ACCENT} />}
+                label="Email"
+                value={email}
+                hint="Ajouter"
+                onPress={toggleEmailEditing}
+              />
+              <Divider />
+              <Row
+                icon={<Phone size={16} color={PURPLE_ACCENT} />}
+                label="Téléphone"
+                value={user?.phone}
+              />
+            </View>
+          )}
+        </View>
+
+        {/* ===== Chauffeur ===== */}
+        <Text className={sectionLabel}>Chauffeur</Text>
+        <View className="mx-4 bg-white rounded-2xl border border-[#EDEDF0] overflow-hidden">
+          {!driverStatus ? (
+            <TouchableOpacity
+              onPress={() => router.push('/onboarding/driver')}
+              activeOpacity={0.85}
+              className="flex-row items-center px-4 py-4 bg-primary-50 active:bg-primary-100"
+            >
+              <View className="w-10 h-10 rounded-xl bg-primary-800 items-center justify-center mr-3">
+                <Car size={18} color="white" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-gray-900 font-bold text-[15px]">Devenir chauffeur</Text>
+                <Text className="text-[#6C7078] text-[13px] mt-0.5">Livrez et gagnez avec inHaz</Text>
+              </View>
+              <View className="w-8 h-8 rounded-full bg-primary-800 items-center justify-center">
+                <ChevronRight size={15} color="white" />
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <View>
+              <Row
+                icon={<Car size={16} color={PURPLE_ACCENT} />}
+                label="Ma candidature"
+                value={driverStatusLabel[driverStatus] ?? driverStatus}
+                onPress={() => router.push('/(driver)/profile')}
+              />
+              {rejectionReason ? (
+                <View className="px-4 pb-3 bg-red-50/60">
+                  <Text className="text-[#B42318] text-[13px] leading-5">
+                    Motif du rejet : {rejectionReason}
+                  </Text>
+                </View>
+              ) : null}
+              <Divider />
+              <Row
+                icon={<FileText size={16} color={PURPLE_ACCENT} />}
+                label="Documents"
+                value="Suivre"
+                onPress={() => router.push('/onboarding/driver')}
+              />
+            </View>
+          )}
+        </View>
+
+        {/* ===== Déconnexion ===== */}
+        <Text className={sectionLabel}>Général</Text>
+        <TouchableOpacity
+          onPress={handleLogout}
+          activeOpacity={0.7}
+          className="mx-4 bg-white rounded-2xl border border-[#EDEDF0] py-4 items-center flex-row justify-center active:bg-[#FAFAFA]"
+        >
+          <LogOut size={16} color="#E5484D" />
+          <Text className="text-[#E5484D] font-semibold text-[15px] ml-2">Déconnexion</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

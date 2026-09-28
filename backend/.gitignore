@@ -1,28 +1,46 @@
-*.log
-.DS_Store
+# Dependencies
+/vendor/
+
+# Environment
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
+.env.*
+!.env.example
+
+# Laravel generated files
 /public/build
-/public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+
 /storage/*.key
+/storage/app/public/*
+!storage/app/public/.gitignore
+
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
 /storage/pail
-/vendor
+
 /bootstrap/cache/*
+/vendor
+!bootstrap/cache/.gitignore
+
+# PHP / Laravel tools
+.phpunit.result.cache
+.phpunit.cache
+.phpactor.json
+auth.json
 _ide_helper.php
-Homestead.json
-Homestead.yaml
+
+# IDE
+.idea/
+.vscode/
+.zed/
+.nova/
+
+# OS
+.DS_Store
 Thumbs.db
+
+# Logs
+*.log

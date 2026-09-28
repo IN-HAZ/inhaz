@@ -5,19 +5,23 @@ import { useState } from 'react';
 import { TripItem, getNextStatus, getStatusLabel } from '@/lib/api/trips';
 import { useTripDetail } from '@/lib/hooks/useTripDetails';
 import { getErrorMessage } from '@/lib/api/errors';
-import { useAuthStore } from '@/lib/store/auth';
+import { useRole } from '@/lib/store/auth';
 
-const STATUS_COLORS: Record<string, string> = {
-  ASSIGNED: '#D97706', DRIVER_EN_ROUTE: '#2563EB', AT_PICKUP: '#7C3AED',
-  PICKED_UP: '#059669', IN_TRANSIT: '#2563EB', AT_DESTINATION: '#7C3AED',
-  DELIVERED: '#16A34A', CANCELLED: '#DC2626',
+const STATUS_COLORS: Record<string, { badge: string; text: string }> = {
+  ASSIGNED: { badge: 'bg-amber-100', text: 'text-amber-600' },
+  DRIVER_EN_ROUTE: { badge: 'bg-blue-100', text: 'text-blue-600' },
+  AT_PICKUP: { badge: 'bg-purple-100', text: 'text-purple-600' },
+  PICKED_UP: { badge: 'bg-emerald-100', text: 'text-emerald-600' },
+  IN_TRANSIT: { badge: 'bg-blue-100', text: 'text-blue-600' },
+  AT_DESTINATION: { badge: 'bg-purple-100', text: 'text-purple-600' },
+  DELIVERED: { badge: 'bg-green-100', text: 'text-green-600' },
+  CANCELLED: { badge: 'bg-red-100', text: 'text-red-600' },
 };
 
 export default function TripDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuthStore();
-  const isDriver = user?.role === 'driver';
+  const { isDriver } = useRole();
   const [cancelReason, setCancelReason] = useState('');
   const [showCancel, setShowCancel] = useState(false);
   const [showRate, setShowRate] = useState(false);
@@ -74,7 +78,7 @@ export default function TripDetailScreen() {
     </View>
   );
 
-  const statusColor = STATUS_COLORS[trip.status] || '#6B7280';
+  const statusStyle = STATUS_COLORS[trip.status] || { badge: 'bg-gray-100', text: 'text-gray-500' };
   const nextStatus = isDriver ? getNextStatus(trip.status) : null;
   const canCancel = trip.status === 'ASSIGNED' || trip.status === 'DRIVER_EN_ROUTE';
   const isCompleted = trip.status === 'DELIVERED';
@@ -89,8 +93,8 @@ export default function TripDetailScreen() {
           <ArrowLeft size={22} color="#1F2937" />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-gray-900 flex-1">Trajet #{trip.id}</Text>
-        <View className="px-3 py-1 rounded-full" style={{ backgroundColor: `${statusColor}15` }}>
-          <Text className="text-xs font-semibold" style={{ color: statusColor }}>{getStatusLabel(trip.status)}</Text>
+        <View className={`px-3 py-1 rounded-full ${statusStyle.badge}`}>
+          <Text className={`text-xs font-semibold ${statusStyle.text}`}>{getStatusLabel(trip.status)}</Text>
         </View>
       </View>
 
@@ -123,7 +127,7 @@ export default function TripDetailScreen() {
         )}
 
         {nextStatus && !isCompleted && trip.status !== 'CANCELLED' && (
-          <TouchableOpacity onPress={() => Alert.alert('Avancer', `Passer \u00e0 "${getStatusLabel(nextStatus)}" ?`, [{ text: 'Annuler', style: 'cancel' }, { text: 'Confirmer', onPress: () => handleTransition(nextStatus) }])} disabled={isTransitioning} className="bg-primary-800 py-4 rounded-xl items-center mb-3" style={{ opacity: isTransitioning ? 0.6 : 1 }}>
+          <TouchableOpacity onPress={() => Alert.alert('Avancer', `Passer \u00e0 "${getStatusLabel(nextStatus)}" ?`, [{ text: 'Annuler', style: 'cancel' }, { text: 'Confirmer', onPress: () => handleTransition(nextStatus) }])} disabled={isTransitioning} className={`bg-primary-800 py-4 rounded-xl items-center mb-3 ${isTransitioning ? 'opacity-60' : ''}`}>
             <Text className="text-white font-bold text-sm">{isTransitioning ? 'En cours...' : `Marquer: ${getStatusLabel(nextStatus)}`}</Text>
           </TouchableOpacity>
         )}
@@ -157,7 +161,7 @@ export default function TripDetailScreen() {
             <Text className="text-gray-900 font-semibold text-sm mb-3">Votre note</Text>
             <View className="flex-row justify-center gap-2 mb-3">
               {[1, 2, 3, 4, 5].map((s) => (
-                <TouchableOpacity key={s} onPress={() => setRatingScore(s)} className="w-12 h-12 rounded-xl items-center justify-center" style={{ backgroundColor: s <= ratingScore ? '#FCD34D' : '#F3F4F6' }}>
+                <TouchableOpacity key={s} onPress={() => setRatingScore(s)} className={`w-12 h-12 rounded-xl items-center justify-center ${s <= ratingScore ? 'bg-yellow-400' : 'bg-gray-100'}`}>
                   <Text className="text-lg">{s <= ratingScore ? '\u2605' : '\u2606'}</Text>
                 </TouchableOpacity>
               ))}

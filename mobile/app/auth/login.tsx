@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, TextInput, TouchableOpacity, Text, KeyboardAvoidingView, Platform } from "react-native";
 import { router } from "expo-router";
-import { apiClient } from "@/lib/api/client";
+import { authApi } from "@/lib/api/auth";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getErrorMessage } from "@/lib/api/errors";
 import { phoneSchema } from "@/lib/validation/auth";
@@ -23,7 +23,7 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      await apiClient.post("/auth/send-otp", { phone: sanitizedPhone });
+      await authApi.sendOtp(sanitizedPhone);
       toast.success("Code OTP envoyé. Vérifiez votre email (Mailpit).");
       router.push({ pathname: "/auth/otp", params: { phone: sanitizedPhone } });
     } catch (e: any) {
@@ -53,10 +53,10 @@ export default function LoginScreen() {
         </View>
 
         <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-2 font-medium">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
             Numéro de téléphone
           </Text>
-          <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 py-1 bg-gray-50">
+          <View className="input-default border-gray-200">
             <Phone size={20} color="#9CA3AF" />
             <TextInput
               className="flex-1 ml-3 text-base text-gray-900 py-3 font-regular"
@@ -75,10 +75,14 @@ export default function LoginScreen() {
           onPress={handleSendOtp}
           disabled={loading}
         >
-          <Text className="text-white font-semibold text-base font-semibold">
+          <Text className="text-white font-semibold text-base">
             {loading ? "Envoi en cours..." : "Recevoir le code"}
           </Text>
-          {!loading && <ArrowRight size={20} color="white" style={{ marginLeft: 8 }} />}
+          {!loading && (
+            <View className="ml-2">
+              <ArrowRight size={20} color="white" />
+            </View>
+          )}
         </TouchableOpacity>
 
         <Text className="text-gray-400 text-xs text-center mt-6 font-regular">

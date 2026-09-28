@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { requestsApi, CreateRequestPayload, DeliveryRequestItem } from "@/lib/api/requests";
 import { offersApi, OfferItem, BrowseRequest } from "@/lib/api/offers";
+import { queryKeys } from "@/lib/api/queryKeys";
 
 export function useDeliveryRequests(page = 1) {
   const queryClient = useQueryClient();
 
   const requestsQuery = useQuery({
-    queryKey: ["requests", "list", page],
+    queryKey: queryKeys.requests.list(page),
     queryFn: () => requestsApi.list(page),
   });
 
@@ -21,7 +22,7 @@ export function useDeliveryRequests(page = 1) {
     mutationFn: ({ id, reason }: { id: number; reason: string }) => requestsApi.cancel(id, reason),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["requests", "list"] });
-      queryClient.invalidateQueries({ queryKey: ["requests", "detail", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.detail(variables.id) });
     },
   });
 
@@ -43,13 +44,13 @@ export function useRequestDetail(id: number) {
   const queryClient = useQueryClient();
 
   const detailQuery = useQuery({
-    queryKey: ["requests", "detail", id],
+    queryKey: queryKeys.requests.detail(id),
     queryFn: () => requestsApi.get(id),
     enabled: !!id,
   });
 
   const offersQuery = useQuery({
-    queryKey: ["requests", id, "offers"],
+    queryKey: queryKeys.requests.offers(id),
     queryFn: () => offersApi.listOffers(id),
     enabled: !!id,
   });
@@ -57,8 +58,8 @@ export function useRequestDetail(id: number) {
   const acceptOfferMutation = useMutation({
     mutationFn: (offerId: number) => offersApi.acceptOffer(offerId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["requests", "detail", id] });
-      queryClient.invalidateQueries({ queryKey: ["requests", id, "offers"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.offers(id) });
       queryClient.invalidateQueries({ queryKey: ["trips"] });
     },
   });
@@ -67,7 +68,7 @@ export function useRequestDetail(id: number) {
     mutationFn: ({ offerId, reason }: { offerId: number; reason?: string }) =>
       offersApi.rejectOffer(offerId, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["requests", id, "offers"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.offers(id) });
     },
   });
 
@@ -91,7 +92,7 @@ export function useBrowseRequests(page = 1, params?: { search?: string; budget_m
   const queryClient = useQueryClient();
 
   const browseQuery = useQuery({
-    queryKey: ["requests", "browse", page, params],
+    queryKey: queryKeys.requests.browse(page, params),
     queryFn: () => offersApi.browse(page, params),
   });
 
@@ -100,8 +101,8 @@ export function useBrowseRequests(page = 1, params?: { search?: string; budget_m
       offersApi.createOffer(requestId, price, message),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["requests", "browse"] });
-      queryClient.invalidateQueries({ queryKey: ["requests", "detail", variables.requestId] });
-      queryClient.invalidateQueries({ queryKey: ["requests", variables.requestId, "offers"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.detail(variables.requestId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.offers(variables.requestId) });
     },
   });
 

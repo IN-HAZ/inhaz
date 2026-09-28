@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { driverApi, DashboardSummaryResponse, ToggleOnlineResponse } from "@/lib/api/driver";
+import { queryKeys } from "@/lib/api/queryKeys";
 
 export function useDriverDashboard() {
   const queryClient = useQueryClient();
 
   const dashboardQuery = useQuery<DashboardSummaryResponse>({
-    queryKey: ["driver", "dashboard"],
+    queryKey: queryKeys.driver.dashboard,
     queryFn: () => driverApi.getDashboardSummary(),
     refetchInterval: 10000,
   });
@@ -13,7 +14,7 @@ export function useDriverDashboard() {
   const toggleOnlineMutation = useMutation<ToggleOnlineResponse, Error>({
     mutationFn: () => driverApi.toggleOnline(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["driver", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.driver.dashboard });
     },
   });
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, TextInput, TouchableOpacity, Text, KeyboardAvoidingView, Platform } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { apiClient } from "@/lib/api/client";
+import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/store/auth";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getErrorMessage } from "@/lib/api/errors";
@@ -13,6 +13,7 @@ export default function OtpScreen() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const setSession = useAuthStore((s) => s.setSession);
+  const setUser = useAuthStore((s) => s.setUser);
   const toast = useToast();
 
   const handleVerifyOtp = async () => {
@@ -25,17 +26,26 @@ export default function OtpScreen() {
     setLoading(true);
 
     try {
-      const response = await apiClient.post("/auth/verify-otp", {
-        phone,
-        code: validation.data,
-      });
+      const grant = await authApi.verifyOtp(phone, validation.data);
 
-      if (response.data.user && response.data.token) {
-        await setSession(response.data.user, response.data.token);
+      if (grant.user && grant.token) {
+        await setSession(grant.user, grant.token);
         toast.success("Connexion réussie !");
-        const u = response.data.user;
+        // `verify-otp` does not load `driver_profile`; refresh once from `/me`
+        // so role routing sees the real persona (W5 §5.1).
+        const meUser = await authApi.me().catch(() => null);
+        if (meUser) setUser(meUser);
+        const u = meUser ?? grant.user;
         const incomplete = !u.name && !u.customer_profile?.name;
-        router.replace(incomplete ? '/(tabs)/profile' : '/(tabs)');
+        const isDriver = u.role === 'driver' || !!u.driver_profile;
+        const hasDriverPersona = !!u.driver_profile;
+        // §6.1: incomplete persona → role-choice; a mid-flight driver
+        // application continues straight into the driver wizard.
+        router.replace(
+          incomplete
+            ? hasDriverPersona ? '/onboarding/driver' : '/auth/role-choice'
+            : isDriver ? '/(driver)' : '/(client)'
+        );
       }
     } catch (e: any) {
       toast.error(getErrorMessage(e));
@@ -70,13 +80,13 @@ export default function OtpScreen() {
           <Text className="text-gray-500 text-base text-center font-regular">
             Code envoyé au
           </Text>
-          <Text className="text-primary-800 font-semibold text-base mt-1 font-semibold">
+          <Text className="text-primary-800 font-semibold text-base mt-1">
             {phone}
           </Text>
         </View>
 
         <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-2 font-medium">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
             Code à 6 chiffres
           </Text>
           <TextInput
@@ -96,10 +106,14 @@ export default function OtpScreen() {
           onPress={handleVerifyOtp}
           disabled={loading}
         >
-          <Text className="text-white font-semibold text-base font-semibold">
+          <Text className="text-white font-semibold text-base">
             {loading ? "Vérification..." : "Vérifier"}
           </Text>
-          {!loading && <ArrowRight size={20} color="white" style={{ marginLeft: 8 }} />}
+          {!loading && (
+            <View className="ml-2">
+              <ArrowRight size={20} color="white" />
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity

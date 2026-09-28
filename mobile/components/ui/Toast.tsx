@@ -17,16 +17,20 @@ const icons = {
   warning: AlertTriangle,
 };
 
-const colors = {
-  success: { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', icon: '#22c55e' },
-  error: { bg: '#fef2f2', border: '#fecaca', text: '#991b1b', icon: '#ef4444' },
-  warning: { bg: '#fffbeb', border: '#fde68a', text: '#92400e', icon: '#f59e0b' },
+// Container/text styling lives in global.css (`.badge-<variant>`,
+// `.badge-<variant>-text`). Icon `color` stays a hex prop: lucide-react-native
+// renders its own <Svg>, which is not a NativeWind-registered component, so
+// className cannot style it.
+const typeStyles = {
+  success: { container: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', icon: '#22c55e' },
+  error: { container: 'bg-red-50 border-red-200', text: 'text-red-700', icon: '#ef4444' },
+  warning: { container: 'bg-amber-50 border-amber-200', text: 'text-amber-700', icon: '#f59e0b' },
 };
 
 export function Toast({ message, type = 'error', onClose, duration = 4000 }: ToastProps) {
   const [opacity] = useState(new Animated.Value(0));
   const Icon = icons[type];
-  const color = colors[type];
+  const styles = typeStyles[type];
 
   useEffect(() => {
     Animated.sequence([
@@ -45,23 +49,24 @@ export function Toast({ message, type = 'error', onClose, duration = 4000 }: Toa
   }, []);
 
   return (
+    // `opacity` stays inline: it is the animated value driving the fade.
     <Animated.View
       style={{ opacity }}
       className="absolute top-14 left-4 right-4 z-50"
     >
       <View
-        style={{ backgroundColor: color.bg, borderColor: color.border }}
-        className="border rounded-2xl p-4 flex-row items-start"
+        className={`border rounded-2xl p-4 flex-row items-start ${styles.container}`}
       >
-        <Icon size={20} color={color.icon} style={{ marginTop: 1 }} />
+        <View className="mt-px">
+          <Icon size={20} color={styles.icon} />
+        </View>
         <Text
-          style={{ color: color.text }}
-          className="flex-1 text-sm font-medium ml-3"
+          className={`flex-1 text-sm font-medium ml-3 ${styles.text}`}
         >
           {message}
         </Text>
         <TouchableOpacity onPress={onClose}>
-          <X size={16} color={color.text} />
+          <X size={16} color={styles.icon} />
         </TouchableOpacity>
       </View>
     </Animated.View>

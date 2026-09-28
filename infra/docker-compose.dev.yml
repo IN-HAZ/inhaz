@@ -1,5 +1,4 @@
 services:
-
   php:
     build:
       context: ..
@@ -77,8 +76,8 @@ services:
 volumes:
   pgdata:
   redisdata:
-  rustfsdata:
   vendor:
+  rustfsdata:
 
 networks:
   inhaz:

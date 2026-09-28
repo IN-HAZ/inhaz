@@ -24,7 +24,7 @@ export function Input({
         </Text>
       )}
       <View
-        className={`flex-row items-center border rounded-2xl px-4 py-1 bg-gray-50 ${
+        className={`input-default ${
           error ? "border-red-500" : "border-gray-200"
         }`}
       >

@@ -30,6 +30,8 @@ class OfferE2ETest extends TestCase
         // 1. Client creates a request
         $createResponse = $this->actingAs($this->client)->postJson('/api/v1/requests', [
             'title' => 'Livraison urgent',
+            'description' => 'Carton de 5 kg',
+            'vehicle_type' => 'voiture',
             'proposed_price' => 500,
             'stops' => [
                 ['type' => 'PICKUP', 'order' => 0, 'address' => 'Casa'],
@@ -41,7 +43,7 @@ class OfferE2ETest extends TestCase
         $requestId = $createResponse->json('request.id');
 
         // Publish: change to OPEN
-        $this->actingAs($this->client)->postJson("/api/v1/requests/{$requestId}/publish");
+        $this->actingAs($this->client)->postJson("/api/v1/requests/{$requestId}/publish")->assertOk();
 
         // 2. Driver1 browses and sees the request
         $browseResponse = $this->actingAs($this->driver1)->getJson('/api/v1/requests/browse');

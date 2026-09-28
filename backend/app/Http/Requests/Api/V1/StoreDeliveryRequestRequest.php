@@ -14,6 +14,7 @@ class StoreDeliveryRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'status' => ['nullable', 'string', 'in:DRAFT,OPEN'],
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'package_weight' => ['nullable', 'numeric', 'min:0.1', 'max:9999'],

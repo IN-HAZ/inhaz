@@ -7,6 +7,27 @@ interface BadgeProps extends ViewProps {
   size?: "sm" | "md";
 }
 
+// Container/text styling lives in global.css (`.badge-<variant>` /
+// `.badge-<variant>-text`). Text needs its own class: RN <Text> does not
+// inherit `color` from a parent <View>.
+const textVariantStyles = {
+  success: "badge-success-text",
+  warning: "badge-warning-text",
+  error: "badge-error-text",
+  info: "badge-info-text",
+  neutral: "badge-neutral-text",
+};
+
+const sizeStyles = {
+  sm: "px-2 py-0.5 rounded-lg border",
+  md: "px-3 py-1 rounded-xl border",
+};
+
+const textSizeStyles = {
+  sm: "text-xs font-semibold",
+  md: "text-sm font-semibold",
+};
+
 export function Badge({
   children,
   variant = "neutral",
@@ -15,35 +36,9 @@ export function Badge({
   style,
   ...props
 }: BadgeProps) {
-  const variantStyles = {
-    success: "bg-emerald-50 border-emerald-200",
-    warning: "bg-amber-50 border-amber-200",
-    error: "bg-red-50 border-red-200",
-    info: "bg-blue-50 border-blue-200",
-    neutral: "bg-gray-100 border-gray-200",
-  };
-
-  const textVariantStyles = {
-    success: "text-emerald-700",
-    warning: "text-amber-700",
-    error: "text-red-700",
-    info: "text-blue-700",
-    neutral: "text-gray-700",
-  };
-
-  const sizeStyles = {
-    sm: "px-2 py-0.5 rounded-lg border",
-    md: "px-3 py-1 rounded-xl border",
-  };
-
-  const textSizeStyles = {
-    sm: "text-xs font-semibold",
-    md: "text-sm font-semibold",
-  };
-
   return (
     <View
-      className={`flex-row items-center justify-center ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+      className={`flex-row items-center justify-center ${sizeStyles[size]} badge-${variant} ${className}`}
       style={style}
       {...props}
     >

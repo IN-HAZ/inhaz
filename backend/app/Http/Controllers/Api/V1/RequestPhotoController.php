@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class RequestPhotoController extends Controller
 {
@@ -18,9 +19,96 @@ class RequestPhotoController extends Controller
 
     public function __construct(private RequestPhotoService $requestPhotoService) {}
 
+    public function presignedUrls(Request $request, DeliveryRequest $deliveryRequest): JsonResponse
+    {
+        $this->authorize('update', $deliveryRequest);
+
+        if (! $deliveryRequest->isDraft()) {
+            return response()->json(['message' => 'Seules les demandes en brouillon peuvent recevoir des photos'], 422);
+        }
+
+        $request->validate([
+            'files' => ['required', 'array', 'min:1'],
+            'files.*.filename' => ['required', 'string'],
+            'files.*.content_type' => ['nullable', 'string'],
+            'files.*.file_size' => ['nullable', 'integer'],
+        ]);
+
+        $results = [];
+
+        foreach ($request->input('files') as $file) {
+            $extension = pathinfo($file['filename'], PATHINFO_EXTENSION) ?: 'jpg';
+            $photoKey = sprintf('requests/%d/photos/%s.%s', $deliveryRequest->id, Str::uuid(), $extension);
+            $contentType = $file['content_type'] ?? 'image/jpeg';
+
+            try {
+                if (class_exists(\Aws\S3\S3Client::class)) {
+                    $s3Client = new \Aws\S3\S3Client([
+                        'version' => 'latest',
+                        'region' => config('filesystems.disks.s3.region', env('AWS_DEFAULT_REGION', 'us-east-1')),
+                        'credentials' => [
+                            'key' => config('filesystems.disks.s3.key', env('AWS_ACCESS_KEY_ID', '')),
+                            'secret' => config('filesystems.disks.s3.secret', env('AWS_SECRET_ACCESS_KEY', '')),
+                        ],
+                    ]);
+                    $cmd = $s3Client->getCommand('PutObject', [
+                        'Bucket' => config('filesystems.disks.s3.bucket', env('AWS_BUCKET', 'inhaz-bucket')),
+                        'Key' => $photoKey,
+                        'ContentType' => $contentType,
+                    ]);
+                    $presignedReq = $s3Client->createPresignedRequest($cmd, '+15 minutes');
+                    $uploadUrl = (string) $presignedReq->getUri();
+                } else {
+                    $uploadUrl = Storage::disk('s3')->temporaryUploadUrl($photoKey, now()->addMinutes(15));
+                }
+            } catch (\Throwable $e) {
+                $uploadUrl = url("/api/v1/mock-s3-upload/{$photoKey}");
+            }
+
+            $results[] = [
+                'photo_key' => $photoKey,
+                'upload_url' => $uploadUrl,
+            ];
+        }
+
+        return response()->json($results);
+    }
+
+    public function confirm(Request $request, DeliveryRequest $deliveryRequest): JsonResponse
+    {
+        $this->authorize('update', $deliveryRequest);
+
+        if (! $deliveryRequest->isDraft()) {
+            return response()->json(['message' => 'Seules les demandes en brouillon peuvent être confirmées'], 422);
+        }
+
+        $request->validate([
+            'photo_key' => ['required', 'string'],
+        ]);
+
+        $photoKey = $request->input('photo_key');
+        $expectedPrefix = "requests/{$deliveryRequest->id}/photos/";
+
+        if (! str_starts_with($photoKey, $expectedPrefix)) {
+            return response()->json(['message' => 'Le photo_key ne correspond pas à cette demande'], 422);
+        }
+
+        $photo = $deliveryRequest->photos()->create([
+            'file_path' => $photoKey,
+            'file_name' => basename($photoKey),
+            'file_type' => 'image/jpeg',
+            'file_size' => 0,
+        ]);
+
+        return response()->json([
+            'message' => 'Photo confirmée avec succès',
+            'photo' => new RequestPhotoResource($photo),
+        ], 201);
+    }
+
     public function store(Request $request, DeliveryRequest $deliveryRequest): JsonResponse
     {
-        $this->authorize('update', $deliveryRequest); // Assuming Policy allows photo upload under update
+        $this->authorize('update', $deliveryRequest);
 
         $request->validate([
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240'],
@@ -47,7 +135,7 @@ class RequestPhotoController extends Controller
         return response()->json(['photos' => RequestPhotoResource::collection($photos)]);
     }
 
-    public function show(Request $request, RequestPhoto $photo) // return type removed as it can be StreamedResponse or JsonResponse
+    public function show(Request $request, RequestPhoto $photo)
     {
         $this->authorize('view', $photo);
 
